@@ -2,8 +2,9 @@ import subprocess
 import os
 import glob as glob_module
 
-from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, tool, LogLevel
+from smolagents import tool
 from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
+from smolagents.local_python_executor import InterpreterError
 
 from utils import confirm
 
@@ -168,8 +169,8 @@ def insert_text(file_path: str, line_number: int, content: str) -> str:
     return f"Inserted text at line {insert_at + 1} in {file_path}"
 
 @tool
-def chat_with_human(question: str) -> str:
-    """Requests human clarification
+def ask_user(question: str) -> str:
+    """Ask User a question. Use it to clarify a task or choose a solution
     
     Args:
         question: a question to ask
@@ -262,18 +263,15 @@ def delete_file(file_path: str) -> str:
 @tool
 @confirm
 def move_file(source: str, destination: str) -> str:
-    """Moves a file or a directory
+    """Moves a file or a directory.
     
     Args:
-        source: The source file/directory path
-        destination: The destination file/directory path
+        source: The source file/directory path.
+        destination: The destination file/directory path.
     """
-    # Create destination directory structure if needed
     dest_dir = os.path.dirname(destination)
     if dest_dir:
         os.makedirs(dest_dir, exist_ok=True)
-    
-    # Move the file/directory
     try:
         os.rename(source, destination)
         return f"Moved {source} to {destination}"
@@ -284,8 +282,36 @@ def move_file(source: str, destination: str) -> str:
     except OSError as e:
         return f"Error moving file: {str(e)}"
 
-_python_interpreter = PythonInterpreterTool()
-_python_interpreter.description = "Evaluates Python code (stdlib only: math, re, datetime, collections, itertools, statistics, random, time, queue, stat, unicodedata)."
+
+@confirm
+def dangerous_python_interpreter(code: str) -> str:
+    import io
+    import contextlib
+    stdout = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(stdout):
+            exec(compile(code, '<string>', 'exec'), {})
+        output = stdout.getvalue()
+        return output if output else "(no output)"
+    except Exception as e:
+        output = stdout.getvalue()
+        return (output + f"\nError: {e}") if output else f"Error: {e}"
+
+@tool
+def execute_python(code: str) -> str:
+    """Execute Python code.
+    
+    Args:
+        code: Python code or expression to evaluate.
+    """
+    try:
+        result = PythonInterpreterTool().forward(code)
+        return result
+    except InterpreterError:
+        # Fallback to safe Python interpreter
+        return dangerous_python_interpreter(code)
+
+
 _web_search = DuckDuckGoSearchTool()
 _web_search.description = "DuckDuckGo search."
 _visit_webpage = VisitWebpageTool()
@@ -306,7 +332,7 @@ TOOLS = [
     delete_file,
     move_file,
     get_conversation_history,
-    _python_interpreter,
+    execute_python,
     _web_search,
     _visit_webpage,
     _final_answer,
