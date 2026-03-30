@@ -205,6 +205,43 @@ def list_directory(path: str = ".") -> str:
         return f"Error: {str(e)}"
 
 @tool
+def get_tree(path: str = ".", max_depth: int = 5) -> str:
+    """Returns a directory tree view with depth limit.
+
+    Args:
+        path: directory path to generate tree for. Defaults to current directory.
+        max_depth: maximum depth to traverse. Defaults to 5.
+    """
+    def _build_tree(root, current_depth=0, prefix=''):
+        if current_depth > max_depth:
+            return prefix + '. . . (max depth reached)\n'
+        
+        try:
+            entries = sorted(os.listdir(root))
+        except (PermissionError, OSError) as e:
+            return prefix + f'Error: {str(e)}\n'
+        
+        output = ''
+        for i, entry in enumerate(entries):
+            full_path = os.path.join(root, entry)
+            is_last = (i == len(entries) - 1)
+            is_dir = os.path.isdir(full_path)
+            
+            connector = '└── ' if is_last else '├── '
+            
+            if is_dir:
+                output += prefix + connector + entry + '/\n'
+                if current_depth < max_depth:
+                    extension = '    ' if is_last else '│   '
+                    output += _build_tree(full_path, current_depth + 1, prefix + extension)
+            else:
+                output += prefix + connector + entry + '\n'
+        
+        return output
+    
+    return _build_tree(path, 0, '')
+
+@tool
 @confirm
 def delete_file(file_path: str) -> str:
     """Deletes a file.
@@ -260,11 +297,12 @@ TOOLS = [
     read_file,
     edit_file,
     insert_text,
+    write_new_file,
+    run_command,
     search_content,
     search_files,
-    run_command,
     list_directory,
-    write_new_file,
+    get_tree,
     delete_file,
     move_file,
     get_conversation_history,
