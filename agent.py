@@ -65,12 +65,6 @@ agent = ToolCallingAgent(
     verbosity_level=LogLevel.INFO,
     stream_outputs=True,
     step_callbacks=[remind_final_answer],
-    # instructions=(
-    #     "\nIMPORTANT: When you have the answer, you MUST call the `final_answer` tool. "
-    #     "Do NOT just write the answer in text. You MUST use: "
-    #     '{"name": "final_answer", "arguments": {"answer": "your answer here"}}'
-    #     '\nIf you encounter the error "Error while parsing tool call from model output: The model output does not contain any JSON blob.", it means you didn\'t call a tool in the previous responce, you should call it!'
-    # ),
 )
 
 print(agent.system_prompt)

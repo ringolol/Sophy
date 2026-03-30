@@ -36,12 +36,15 @@ def read_file(file_path: str) -> str:
         file_path: The path to the file to read.
     """
     with open(file_path, "r", encoding="utf-8") as f:
-        return f"{f.read()}"
+        lines = f.readlines()
+    width = len(str(len(lines)))
+    numbered = [f"{i:>{width}} | {line}" for i, line in enumerate(lines, 1)]
+    return "".join(numbered)
 
 @tool
 @confirm
-def write_file(file_path: str, content: str) -> str:
-    """Writes a file.
+def write_new_file(file_path: str, content: str) -> str:
+    """Writes a new file.
 
     Args:
         file_path: The path to the file to write.
@@ -64,6 +67,37 @@ def search_files(pattern: str, directory: str = ".") -> str:
     if not matches:
         return "No files found."
     return "\n".join(matches[:50])
+
+@tool
+def search_content(text_pattern: str, directory: str = ".", file_pattern: str = "*") -> str:
+    """Searches file contents for a text pattern (grep).
+
+    Args:
+        text_pattern: Text or regex pattern to search for.
+        directory: Directory to search in. Defaults to current directory.
+        file_pattern: Glob pattern to filter files (e.g. "*.py"). Defaults to all files.
+    """
+    import re
+    try:
+        regex = re.compile(text_pattern)
+    except re.error:
+        regex = re.compile(re.escape(text_pattern))
+    results = []
+    for file_path in glob_module.glob(os.path.join(directory, "**", file_pattern), recursive=True):
+        if not os.path.isfile(file_path):
+            continue
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                for i, line in enumerate(f, 1):
+                    if regex.search(line):
+                        results.append(f"{file_path}:{i}: {line.rstrip()}")
+                        if len(results) >= 100:
+                            return "\n".join(results) + "\n... (truncated at 100 matches)"
+        except (OSError, PermissionError):
+            continue
+    if not results:
+        return "No matches found."
+    return "\n".join(results)
 
 @tool
 @confirm
@@ -90,6 +124,48 @@ def run_command(command: str) -> str:
     if result.returncode != 0:
         output += f"\n(exit code {result.returncode})"
     return output or "(no output)"
+
+@tool
+@confirm
+def edit_file(file_path: str, old_content: str, new_content: str) -> str:
+    """Edits a file by replacing an exact match of old_content with new_content.
+
+    Args:
+        file_path: The path to the file to edit.
+        old_content: The exact text to find and replace.
+        new_content: The replacement text.
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    count = content.count(old_content)
+    if count == 0:
+        return f"Error: old_content not found in {file_path}."
+    if count > 1:
+        return f"Error: old_content matches {count} locations in {file_path}. Provide more context to make it unique."
+    new_file = content.replace(old_content, new_content, 1)
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(new_file)
+    return f"Edited {file_path}"
+
+@tool
+@confirm
+def insert_text(file_path: str, line_number: int, content: str) -> str:
+    """Inserts text before a given line number.
+
+    Args:
+        file_path: The path to the file to edit.
+        line_number: The line number to insert before.
+        content: The text to insert.
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    if not content.endswith("\n"):
+        content += "\n"
+    insert_at = max(0, min(line_number - 1, len(lines)))
+    lines.insert(insert_at, content)
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+    return f"Inserted text at line {insert_at + 1} in {file_path}"
 
 @tool
 def chat_with_human(question: str) -> str:
@@ -182,10 +258,13 @@ _final_answer.description = "Returns your final answer."
 
 TOOLS = [
     read_file,
-    write_file,
+    edit_file,
+    insert_text,
+    search_content,
     search_files,
     run_command,
     list_directory,
+    write_new_file,
     delete_file,
     move_file,
     get_conversation_history,
