@@ -1,9 +1,11 @@
-from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, LogLevel
+from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, LogLevel, tool
 from smolagents.memory import ActionStep
 
-from utils import DIRECT_PROMPT, ToolDeniedException
+from utils import ToolDeniedException, SupportedModels
 from model import ThinkingModel
 from tools import *
+from prompts import DIRECT_PROMPT
+from session import Session
 
 
 def remind_final_answer(step):
@@ -16,17 +18,28 @@ def remind_final_answer(step):
         ) 
 
 
+session = Session()
+
+
+@tool
+def get_conversation_history(last_n: int = 5) -> str:
+    """Returns a summary of recent conversations. Use to recall previous context.
+
+    Args:
+        last_n: Number of recent conversations to return. Defaults to 5.
+    """
+    return session.get_summary(last_n)
+
+
 model = ThinkingModel(
-    model_id="glm-4.7-flash",
-    # model_id="qwen3.5:35b-a3b",
+    model_id=SupportedModels.qwen_3_5_35b_a3b.value,
     api_base="http://localhost:11434/v1",
     api_key="ollama",
 )
 
 
-
 agent = ToolCallingAgent(
-    tools=[read_file, write_file, search_files, run_command, list_directory],
+    tools=[read_file, write_file, search_files, run_command, list_directory, get_conversation_history],
     add_base_tools=True,
     prompt_templates=PromptTemplates(
         system_prompt=DIRECT_PROMPT,
@@ -51,13 +64,12 @@ agent = ToolCallingAgent(
     # ),
 )
 
-print(agent.system_prompt)
+# print(agent.system_prompt)
 
 if __name__ == "__main__":
     print("Agent ready. Type 'quit' to exit.\n")
 
     task_prefix = ""
-    task_sufix = "Call the `final_answer` tool for the final answer"
     while True:
         task = input("❯ ").strip()
         if task.lower() in ("quit", "exit", "q"):
@@ -67,7 +79,20 @@ if __name__ == "__main__":
         try:
             result = agent.run(task_prefix + task)
             task_prefix = ""
-            print(f"\nAgent: {result}\n")
+
+            # Extract history from memory before next run resets it
+            tools_used = []
+            for step in agent.memory.steps:
+                if isinstance(step, ActionStep) and step.tool_calls:
+                    for tc in step.tool_calls:
+                        tools_used.append(tc.name)
+
+            session.add_entry(
+                task=task,
+                result=str(result),
+                steps=agent.memory.get_full_steps(),
+                tools_used=tools_used,
+            )
         except ToolDeniedException as e:
             print(f"\n{e}\n")
             task_prefix = str(e) + '\n\n'

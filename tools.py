@@ -13,7 +13,8 @@ __all__ = [
     "search_files",
     "run_command",
     "chat_with_human",
-    "list_directory"
+    "list_directory",
+    "delete_file"
 ]
 
 @tool
@@ -116,11 +117,23 @@ def list_directory(path: str = ".") -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-# @tool
-# @confirm
-# def delete_file(file_path: str) -> str:
-#     """Safely deletes files with confirmation"""
-#     return f"Deleted {file_path}"
+@tool
+@confirm
+def delete_file(file_path: str) -> str:
+    """Deletes a file.
+    
+    Args:
+        file_path: The path to the file to delete.
+    """
+    try:
+        os.remove(file_path)
+        return f"Deleted file: {file_path}"
+    except FileNotFoundError:
+        return f"Error: File '{file_path}' not found."
+    except PermissionError:
+        return f"Error: Permission denied when deleting '{file_path}'."
+    except OSError as e:
+        return f"Error deleting file: {str(e)}"
 
 @tool
 @confirm
@@ -146,8 +159,3 @@ def move_file(source: str, destination: str) -> str:
         return f"Error: Both source and destination must be directories for move operation between directories."
     except OSError as e:
         return f"Error moving file: {str(e)}"
-    
-# @tool
-# def get_conversation_history(limit: int = 10) -> str:
-#     """Returns recent conversation context for better understanding"""
-#     return ""
