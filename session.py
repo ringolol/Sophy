@@ -9,9 +9,6 @@ from smolagents.monitoring import Timing, TokenUsage
 
 
 SESSIONS_DIR = "sessions"
-SUMMARY_EXCLUDED_KEYS = {"model_input_messages", "observations", "observations_images"}
-
-
 @dataclass
 class ConversationEntry:
     task: str
@@ -39,19 +36,37 @@ class Session:
     def get_summary(self, last_n: int = 5) -> str:
         if not self.entries:
             return "No previous conversations."
-       
+
         recent = self.entries[-last_n:]
         parts = []
         for i, entry in enumerate(recent):
-            part = f"[#{i+1}] User: {entry.task}\nResult: {entry.result}"
-            if entry.tools_used:
-                part += f"\nTools used: {', '.join(entry.tools_used)}"
-            filtered_steps = [
-                {k: v for k, v in step.items() if k not in SUMMARY_EXCLUDED_KEYS}
-                for step in entry.steps
-            ]
-            part += f"\nSteps: {json.dumps(filtered_steps, default=str)}"
-            parts.append(part)
+            lines = [f"[#{i+1}] User: {entry.task}"]
+            # Summarize tool calls from steps
+            for step in entry.steps:
+                if "task" in step:
+                    continue
+                tool_calls = step.get("tool_calls") or []
+                for tc in tool_calls:
+                    fn = tc.get("function", {})
+                    name = fn.get("name", "?")
+                    args = fn.get("arguments", {})
+                    if name == "final_answer":
+                        continue
+                    # Show a compact representation of the call
+                    if isinstance(args, dict):
+                        arg_str = ", ".join(f"{k}={v!r}" for k, v in args.items())
+                    else:
+                        arg_str = str(args)
+                    lines.append(f"  -> {name}({arg_str})")
+                # Show observation snippet if present
+                obs = step.get("observations")
+                if obs:
+                    snippet = obs.strip().replace("\n", " ")
+                    if len(snippet) > 120:
+                        snippet = snippet[:120] + "..."
+                    lines.append(f"     = {snippet}")
+            lines.append(f"  Result: {entry.result}")
+            parts.append("\n".join(lines))
         return "\n\n".join(parts)
 
     def to_dict(self) -> dict:

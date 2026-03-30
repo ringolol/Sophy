@@ -3,23 +3,34 @@ import os
 import glob as glob_module
 
 from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, tool, LogLevel
+from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
 
 from utils import confirm
 
 
-__all__ = [
-    "read_file",
-    "write_file",
-    "search_files",
-    "run_command",
-    "chat_with_human",
-    "list_directory",
-    "delete_file"
-]
+_history_provider = None
+
+
+def set_history_provider(fn):
+    """Register a callback that returns conversation summary text."""
+    global _history_provider
+    _history_provider = fn
+
+
+@tool
+def get_conversation_history(last_n: int = 5) -> str:
+    """Returns recent conversation history.
+
+    Args:
+        last_n: Number of recent conversations to return. Defaults to 5.
+    """
+    if _history_provider is None:
+        return "No history provider configured."
+    return _history_provider(last_n)
 
 @tool
 def read_file(file_path: str) -> str:
-    """Reads and returns the contents of a file.
+    """Reads a file.
 
     Args:
         file_path: The path to the file to read.
@@ -30,7 +41,7 @@ def read_file(file_path: str) -> str:
 @tool
 @confirm
 def write_file(file_path: str, content: str) -> str:
-    """Writes content to a file, creating directories if needed.
+    """Writes a file.
 
     Args:
         file_path: The path to the file to write.
@@ -43,7 +54,7 @@ def write_file(file_path: str, content: str) -> str:
 
 @tool
 def search_files(pattern: str, directory: str = ".") -> str:
-    """Searches for files matching a glob pattern recursively.
+    """Glob search for files.
 
     Args:
         pattern: Glob pattern to match (e.g. "**/*.py", "*.txt").
@@ -57,7 +68,7 @@ def search_files(pattern: str, directory: str = ".") -> str:
 @tool
 @confirm
 def run_command(command: str) -> str:
-    """Executes a shell command and returns its output.
+    """Runs a shell command.
 
     Args:
         command: The shell command to execute.
@@ -91,8 +102,8 @@ def chat_with_human(question: str) -> str:
 
 @tool
 def list_directory(path: str = ".") -> str:
-    """Lists the directory with file types and sizes
-    
+    """Lists directory contents.
+
     Args:
         path: directory path, supports relative notation"""
     try:
@@ -138,7 +149,7 @@ def delete_file(file_path: str) -> str:
 @tool
 @confirm
 def move_file(source: str, destination: str) -> str:
-    """Moves file or directory to destination
+    """Moves a file or a directory
     
     Args:
         source: The source file/directory path
@@ -159,3 +170,27 @@ def move_file(source: str, destination: str) -> str:
         return f"Error: Both source and destination must be directories for move operation between directories."
     except OSError as e:
         return f"Error moving file: {str(e)}"
+
+_python_interpreter = PythonInterpreterTool()
+_python_interpreter.description = "Evaluates Python code (stdlib only: math, re, datetime, collections, itertools, statistics, random, time, queue, stat, unicodedata)."
+_web_search = DuckDuckGoSearchTool()
+_web_search.description = "DuckDuckGo search."
+_visit_webpage = VisitWebpageTool()
+_visit_webpage.description = "Reads a URL as markdown."
+_final_answer = FinalAnswerTool()
+_final_answer.description = "Returns your final answer."
+
+TOOLS = [
+    read_file,
+    write_file,
+    search_files,
+    run_command,
+    list_directory,
+    delete_file,
+    move_file,
+    get_conversation_history,
+    _python_interpreter,
+    _web_search,
+    _visit_webpage,
+    _final_answer,
+]

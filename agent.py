@@ -1,10 +1,10 @@
-from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, LogLevel, tool
+from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, LogLevel
 from smolagents.memory import ActionStep
 
 from utils import ToolDeniedException, SupportedModels
 from model import ThinkingModel
-from tools import *
-from prompts import DIRECT_PROMPT
+from tools import TOOLS, set_history_provider
+from prompts import build_prompt
 from session import Session, list_sessions, restore_memory
 
 
@@ -38,17 +38,7 @@ def pick_session() -> Session:
 
 
 session = Session()
-
-
-@tool
-def get_conversation_history(last_n: int = 5) -> str:
-    """Returns a summary of recent conversations. Use to recall previous context.
-
-    Args:
-        last_n: Number of recent conversations to return. Defaults to 5.
-    """
-    return session.get_summary(last_n)
-
+set_history_provider(session.get_summary)
 
 model = ThinkingModel(
     model_id=SupportedModels.qwen_3_5_35b_a3b.value,
@@ -58,10 +48,10 @@ model = ThinkingModel(
 
 
 agent = ToolCallingAgent(
-    tools=[read_file, write_file, search_files, run_command, list_directory, get_conversation_history],
-    add_base_tools=True,
+    tools=TOOLS,
+    add_base_tools=False,
     prompt_templates=PromptTemplates(
-        system_prompt=DIRECT_PROMPT,
+        system_prompt=build_prompt(TOOLS),
         planning=PlanningPromptTemplate(
             initial_plan="",
             update_plan_pre_messages="",
@@ -83,7 +73,7 @@ agent = ToolCallingAgent(
     # ),
 )
 
-# print(agent.system_prompt)
+print(agent.system_prompt)
 
 def load_session(s: Session):
     """Print session history and restore agent memory."""
@@ -113,6 +103,13 @@ if __name__ == "__main__":
                 session.save_auto()
                 print(f"Session {session.id} saved.")
             break
+        if task == "/new":
+            if session.entries:
+                session.save_auto()
+            session = Session()
+            agent.memory.reset()
+            print(f"Session: {session.id}\n")
+            continue
         if task == "/resume":
             if session.entries:
                 session.save_auto()
