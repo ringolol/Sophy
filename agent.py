@@ -5,7 +5,7 @@ from utils import ToolDeniedException, SupportedModels
 from model import ThinkingModel
 from tools import *
 from prompts import DIRECT_PROMPT
-from session import Session
+from session import Session, list_sessions, restore_memory
 
 
 def remind_final_answer(step):
@@ -16,6 +16,25 @@ def remind_final_answer(step):
             "\n\n⚠️ You are running low on steps. "
             "Call `final_answer` NOW with your best answer."
         ) 
+
+
+def pick_session() -> Session:
+    saved = list_sessions()
+    print("Sessions:")
+    print("  [0] New session")
+    for i, s in enumerate(saved, 1):
+        print(f"  [{i}] {s['id']} — {s['created_at'][:10]} — {s['entry_count']} entries — \"{s['preview']}\"")
+    choice = input("Choose session [0]: ").strip()
+    if not choice or choice == "0":
+        return Session()
+    try:
+        idx = int(choice)
+        if 1 <= idx <= len(saved):
+            return Session.load(saved[idx - 1]["path"])
+    except ValueError:
+        pass
+    print("Invalid choice, starting new session.")
+    return Session()
 
 
 session = Session()
@@ -66,18 +85,43 @@ agent = ToolCallingAgent(
 
 # print(agent.system_prompt)
 
+def load_session(s: Session):
+    """Print session history and restore agent memory."""
+    if s.entries:
+        print(f"\n--- Session history ({len(s.entries)} entries) ---")
+        for i, entry in enumerate(s.entries, 1):
+            print(f"  [{i}] User: {entry.task}")
+            print(f"      Result: {entry.result}")
+            if entry.tools_used:
+                print(f"      Tools: {', '.join(entry.tools_used)}")
+        print("---\n")
+        restore_memory(agent, s)
+
+
 if __name__ == "__main__":
-    print("Agent ready. Type 'quit' to exit.\n")
+    session = pick_session()
+    print(f"Session: {session.id}\nType /quit to save & exit, /resume to switch sessions.\n")
+    load_session(session)
 
     task_prefix = ""
     while True:
         task = input("❯ ").strip()
-        if task.lower() in ("quit", "exit", "q"):
-            break
         if not task:
             continue
+        if task == "/quit":
+            if session.entries:
+                session.save_auto()
+                print(f"Session {session.id} saved.")
+            break
+        if task == "/resume":
+            if session.entries:
+                session.save_auto()
+            session = pick_session()
+            print(f"Session: {session.id}\n")
+            load_session(session)
+            continue
         try:
-            result = agent.run(task_prefix + task)
+            result = agent.run(task_prefix + task, reset=False)
             task_prefix = ""
 
             # Extract history from memory before next run resets it
@@ -93,6 +137,7 @@ if __name__ == "__main__":
                 steps=agent.memory.get_full_steps(),
                 tools_used=tools_used,
             )
+            session.save_auto()
         except ToolDeniedException as e:
             print(f"\n{e}\n")
             task_prefix = str(e) + '\n\n'

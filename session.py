@@ -1,9 +1,14 @@
 import json
+import os
 import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 
+from smolagents.memory import TaskStep, ActionStep, ToolCall
+from smolagents.monitoring import Timing, TokenUsage
 
+
+SESSIONS_DIR = "sessions"
 SUMMARY_EXCLUDED_KEYS = {"model_input_messages", "observations", "observations_images"}
 
 
@@ -61,7 +66,79 @@ class Session:
         with open(path, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
+    def save_auto(self):
+        os.makedirs(SESSIONS_DIR, exist_ok=True)
+        self.save(os.path.join(SESSIONS_DIR, f"{self.id}.json"))
+
     @classmethod
     def load(cls, path: str) -> "Session":
         with open(path) as f:
             return cls.from_dict(json.load(f))
+
+
+def list_sessions() -> list[dict]:
+    """Returns session metadata sorted by creation time (newest first)."""
+    if not os.path.isdir(SESSIONS_DIR):
+        return []
+    sessions = []
+    for fname in os.listdir(SESSIONS_DIR):
+        if not fname.endswith(".json"):
+            continue
+        path = os.path.join(SESSIONS_DIR, fname)
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            first_task = data["entries"][0]["task"] if data.get("entries") else ""
+            sessions.append({
+                "id": data["id"],
+                "created_at": data["created_at"],
+                "entry_count": len(data.get("entries", [])),
+                "preview": first_task[:50],
+                "path": path,
+            })
+        except (json.JSONDecodeError, KeyError):
+            continue
+    sessions.sort(key=lambda s: s["created_at"], reverse=True)
+    return sessions
+
+
+def _step_from_dict(d: dict) -> TaskStep | ActionStep:
+    """Reconstruct a memory step from its dict representation."""
+    if "task" in d:
+        return TaskStep(task=d["task"])
+    timing_data = d.get("timing", {})
+    timing = Timing(start_time=timing_data.get("start_time", 0), end_time=timing_data.get("end_time"))
+    tool_calls = None
+    if d.get("tool_calls"):
+        tool_calls = [
+            ToolCall(
+                name=tc["function"]["name"],
+                arguments=tc["function"]["arguments"],
+                id=tc["id"],
+            )
+            for tc in d["tool_calls"]
+        ]
+    token_usage = None
+    if d.get("token_usage"):
+        token_usage = TokenUsage(
+            input_tokens=d["token_usage"]["input_tokens"],
+            output_tokens=d["token_usage"]["output_tokens"],
+        )
+    return ActionStep(
+        step_number=d.get("step_number", 0),
+        timing=timing,
+        tool_calls=tool_calls,
+        model_output=d.get("model_output"),
+        observations=d.get("observations"),
+        action_output=d.get("action_output"),
+        token_usage=token_usage,
+        is_final_answer=d.get("is_final_answer", False),
+    )
+
+
+def restore_memory(agent, session: "Session"):
+    """Restore agent memory from a loaded session."""
+    agent.memory.reset()
+    for entry in session.entries:
+        for step_dict in entry.steps:
+            agent.memory.steps.append(_step_from_dict(step_dict))
