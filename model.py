@@ -1,5 +1,7 @@
 from smolagents import OpenAIServerModel
-import shutil
+from rich.console import Console
+
+console = Console()
 
 
 class ThinkingModel(OpenAIServerModel):
@@ -38,14 +40,14 @@ class ThinkingModel(OpenAIServerModel):
                     reasoning = raw.get("reasoning") or getattr(choice.delta, "reasoning_content", None)
                     if reasoning:
                         if not thinking:
-                            print("\n💭 Thinking: ", end="")
+                            console.print("\n[dim italic]💭 Thinking:[/dim italic] ", end="")
                             thinking = True
-                        print(f"{reasoning}", end="")
+                        console.print(f"[dim]{reasoning}[/dim]", end="", highlight=False)
                     elif thinking and choice.delta.content:
                         thinking = False
-                        print()
-                        print('\033[90m' + '_' * shutil.get_terminal_size().columns + '\033[0m')
-                        print()
+                        console.print()
+                        console.rule(style="dim")
+                        console.print()
                     yield ChatMessageStreamDelta(
                         content=choice.delta.content,
                         tool_calls=[

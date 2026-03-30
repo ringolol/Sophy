@@ -1,11 +1,16 @@
 from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, LogLevel
 from smolagents.memory import ActionStep
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 
 from utils import ToolDeniedException, SupportedModels
 from model import ThinkingModel
 from tools import TOOLS, set_history_provider
 from prompts import build_prompt
 from session import Session, list_sessions, restore_memory
+
+console = Console()
 
 
 def remind_final_answer(step):
@@ -15,15 +20,21 @@ def remind_final_answer(step):
         step.observations = (step.observations or "") + (
             "\n\n⚠️ You are running low on steps. "
             "Call `final_answer` NOW with your best answer."
-        ) 
+        )
 
 
 def pick_session() -> Session:
     saved = list_sessions()
-    print("Sessions:")
-    print("  [0] New session")
+    table = Table(title="Sessions", show_header=True, header_style="bold cyan")
+    table.add_column("#", style="bold")
+    table.add_column("ID")
+    table.add_column("Date")
+    table.add_column("Entries", justify="right")
+    table.add_column("Preview")
+    table.add_row("0", "[green]New session[/green]", "", "", "")
     for i, s in enumerate(saved, 1):
-        print(f"  [{i}] {s['id']} — {s['created_at'][:10]} — {s['entry_count']} entries — \"{s['preview']}\"")
+        table.add_row(str(i), s['id'], s['created_at'][:10], str(s['entry_count']), s['preview'])
+    console.print(table)
     choice = input("Choose session [0]: ").strip()
     if not choice or choice == "0":
         return Session()
@@ -33,7 +44,7 @@ def pick_session() -> Session:
             return Session.load(saved[idx - 1]["path"])
     except ValueError:
         pass
-    print("Invalid choice, starting new session.")
+    console.print("[red]Invalid choice, starting new session.[/red]")
     return Session()
 
 
@@ -67,24 +78,24 @@ agent = ToolCallingAgent(
     step_callbacks=[remind_final_answer],
 )
 
-print(agent.system_prompt)
+# console.print(agent.system_prompt)
 
 def load_session(s: Session):
     """Print session history and restore agent memory."""
     if s.entries:
-        print(f"\n--- Session history ({len(s.entries)} entries) ---")
-        for i, entry in enumerate(s.entries, 1):
-            print(f"  [{i}] User: {entry.task}")
-            print(f"      Result: {entry.result}")
-            if entry.tools_used:
-                print(f"      Tools: {', '.join(entry.tools_used)}")
-        print("---\n")
+        console.rule(f"[bold cyan]Session History ({len(s.entries)} entries)[/bold cyan]")
+        for entry in s.entries:
+            console.print(Panel(entry.task, title="[bold green]You[/bold green]", title_align="left", border_style="green", padding=(0, 1)))
+            console.print(Panel(entry.result, title="[bold blue]Agent[/bold blue]", title_align="left", border_style="blue", padding=(0, 1)))
+        console.rule(style="dim")
+        console.print()
         restore_memory(agent, s)
 
 
 if __name__ == "__main__":
     session = pick_session()
-    print(f"Session: {session.id}\nType /quit to save & exit, /resume to switch sessions.\n")
+    console.print(f"[dim][bold]Session:[/bold] {session.id}[/dim]")
+    console.print("Type /quit to save & exit, /resume to switch sessions.\n")
     load_session(session)
 
     task_prefix = ""
@@ -95,20 +106,20 @@ if __name__ == "__main__":
         if task == "/quit":
             if session.entries:
                 session.save_auto()
-                print(f"Session {session.id} saved.")
+                console.print(f"[green]Session {session.id} saved.[/green]")
             break
         if task == "/new":
             if session.entries:
                 session.save_auto()
             session = Session()
             agent.memory.reset()
-            print(f"Session: {session.id}\n")
+            console.print(f"[bold]Session:[/bold] {session.id}\n")
             continue
         if task == "/resume":
             if session.entries:
                 session.save_auto()
             session = pick_session()
-            print(f"Session: {session.id}\n")
+            console.print(f"[bold]Session:[/bold] {session.id}\n")
             load_session(session)
             continue
         try:
@@ -130,5 +141,5 @@ if __name__ == "__main__":
             )
             session.save_auto()
         except ToolDeniedException as e:
-            print(f"\n{e}\n")
+            console.print(f"\n[red]{e}[/red]\n")
             task_prefix = str(e) + '\n\n'

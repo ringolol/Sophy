@@ -312,12 +312,12 @@ def execute_python(code: str) -> str:
         return dangerous_python_interpreter(code)
 
 
-_web_search = DuckDuckGoSearchTool()
-_web_search.description = "DuckDuckGo search."
-_visit_webpage = VisitWebpageTool()
-_visit_webpage.description = "Reads a URL as markdown."
-_final_answer = FinalAnswerTool()
-_final_answer.description = "Returns your final answer."
+web_search = DuckDuckGoSearchTool()
+web_search.description = "DuckDuckGo search."
+visit_webpage = VisitWebpageTool()
+visit_webpage.description = "Reads a URL as markdown."
+final_answer = FinalAnswerTool()
+final_answer.description = "Returns your final answer."
 
 TOOLS = [
     read_file,
@@ -333,7 +333,7 @@ TOOLS = [
     move_file,
     get_conversation_history,
     execute_python,
-    _web_search,
-    _visit_webpage,
-    _final_answer,
+    web_search,
+    visit_webpage,
+    final_answer,
 ]

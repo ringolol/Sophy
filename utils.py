@@ -2,6 +2,12 @@ import difflib
 import functools
 import enum
 
+from rich.console import Console
+from rich.syntax import Syntax
+from rich.panel import Panel
+
+console = Console()
+
 
 class SupportedModels(enum.Enum):
     qwen_3_5_35b_a3b = "qwen3.5:35b-a3b"
@@ -20,19 +26,10 @@ def _print_diff(old_lines, new_lines, path):
         n=3,
     ))
     if not diff:
-        print("(no changes)")
+        console.print("[dim](no changes)[/dim]")
         return
-    for line in "".join(diff).splitlines():
-        if line.startswith("+++") or line.startswith("---"):
-            print(f"\033[1m{line}\033[0m")
-        elif line.startswith("+"):
-            print(f"\033[32m{line}\033[0m")
-        elif line.startswith("-"):
-            print(f"\033[31m{line}\033[0m")
-        elif line.startswith("@@"):
-            print(f"\033[36m{line}\033[0m")
-        else:
-            print(line)
+    diff_text = "".join(diff)
+    console.print(Syntax(diff_text, "diff", theme="monokai", word_wrap=True))
 
 
 def _preview_edit(kwargs):
@@ -90,16 +87,17 @@ def confirm(fn):
 
     @functools.wraps(fn)
     def guarded_fn(*args, **kwargs):
-        print(f"\n--- Agent wants to run: {fn.__name__} ---")
+        console.print()
+        console.rule(f"[bold yellow]Agent wants to run: {fn.__name__}[/bold yellow]")
         previewer = _PREVIEWERS.get(fn.__name__)
         if previewer:
             old_lines, new_lines, path = previewer(kwargs)
             if old_lines is not None:
                 _print_diff(old_lines, new_lines, path)
             else:
-                print(f"(new file: {path})")
+                console.print(f"[green](new file: {path})[/green]")
         else:
-            print(f"Args: {kwargs}")
+            console.print(Panel(str(kwargs), title="Args", border_style="dim"))
         while (answer := input("Allow? [y/n]: ").strip().lower()) not in ("y", "n"):
             pass
         if answer != "y":
