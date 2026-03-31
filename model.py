@@ -41,24 +41,19 @@ class ThinkingModel(OpenAIServerModel):
                     raw = choice.delta.model_extra or {}
                     reasoning = raw.get("reasoning") or getattr(choice.delta, "reasoning_content", None)
                     if reasoning:
-                        # if not thinking:
-                            # console.print("\n[dim italic]💭 Thinking:[/dim italic] ", end="")
                         thinking_text.append(reasoning)
                         thinking = True
-                        # console.print(f"[dim]{reasoning}[/dim]", end="", highlight=False)
                     elif thinking and choice.delta.content:
                         thinking = False
                         console.print(Panel(
-                            "".join(thinking_text).strip(),
+                            ''.join(thinking_text).strip(),
                             title="💭 Thinking",
                             title_align="left", 
                             border_style="dim",   
+                            style="gray70",
                             padding=(0, 1),
                         ))
                         thinking_text.clear()  
-                        # console.print()
-                        # console.rule(style="dim")
-                        # console.print()
                         
                     yield ChatMessageStreamDelta(
                         content=choice.delta.content,
