@@ -107,7 +107,7 @@ def confirm(fn):
             print("\033[A\033[2K", end="", flush=True)
         print("\033[A\033[2K", end="", flush=True)
         if answer != "y":
-            raise ToolDeniedException("User denied the last tool execution. Be attentive User may ask you to explain or change something about the last task!")
+            raise ToolDeniedException()
         return fn(*args, **kwargs)
 
     return guarded_fn

@@ -19,6 +19,7 @@ PANEL_COLORS = {
     "observation": "#C0C0C0",# Color for observation panels
     "custom": "#FFFFFF",     # Default custom color
     "tool": "#d4b702",
+    "sub-agent": "#4A9ECC",
 }
 
 # Patch the YELLOW_HEX constant for default behavior
@@ -201,11 +202,12 @@ def _make_patched_process_tool_calls(tool_color: str):
 _patched_process_tool_calls = _make_patched_process_tool_calls(PANEL_COLORS["tool"])
 
 
-def apply_explorer_patches(agent):
+def apply_explorer_monkey_patches(agent):
+    sub_agent_color = PANEL_COLORS["sub-agent"]
     """Apply monkey patches for the explorer sub-agent (distinct colors, hidden observations)."""
-    apply_custom_logger(agent, task_color="#4A9ECC", observation_color="#808080")
+    apply_custom_logger(agent, task_color=sub_agent_color, observation_color=PANEL_COLORS["observation"])
     hide_observation_logs(agent)
-    agent.process_tool_calls = _make_patched_process_tool_calls("#4A9ECC").__get__(agent)
+    agent.process_tool_calls = _make_patched_process_tool_calls(sub_agent_color).__get__(agent)
 
 
 def apply_monkey_patches(agent):
