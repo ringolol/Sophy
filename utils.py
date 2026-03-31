@@ -99,7 +99,8 @@ def confirm(fn):
         else:
             console.print(Panel(str(kwargs), title="Args", border_style="dim"))
         while (answer := input("Allow? [y/n]: ").strip().lower()) not in ("y", "n"):
-            pass
+            print("\033[A\033[2K", end="", flush=True)
+        print("\033[A\033[2K", end="", flush=True)
         if answer != "y":
             raise ToolDeniedException("User denied the last tool execution. Be attentive User may ask you to explain or change something about the last task!")
         return fn(*args, **kwargs)

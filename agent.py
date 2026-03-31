@@ -78,6 +78,24 @@ agent = ToolCallingAgent(
     step_callbacks=[remind_final_answer],
 )
 
+# Hide observation logs — they're noisy and we show tool results via confirm()
+_original_log = agent.logger.log
+def _filtered_log(*args, **kwargs):
+    if args and isinstance(args[0], str) and args[0].startswith("Observations:"):
+        return
+    _original_log(*args, **kwargs)
+agent.logger.log = _filtered_log
+
+# Hide raw tool call JSON from the streamed Live display
+import re
+from smolagents.models import ChatMessage
+_TOOL_CALL_RE = re.compile(r"\{\"name\":\s*\".*$", re.DOTALL)
+def _clean_render(self):
+    text = str(self.content or "")
+    text = _TOOL_CALL_RE.sub("", text)
+    return text.strip()
+ChatMessage.render_as_markdown = _clean_render
+
 # console.print(agent.system_prompt)
 
 def load_session(s: Session):
@@ -101,6 +119,8 @@ if __name__ == "__main__":
     task_prefix = ""
     while True:
         task = input("❯ ").strip()
+        # Clear the input line (move up one line, clear it)
+        print("\033[A\033[2K", end="", flush=True)
         if not task:
             continue
         if task == "/quit":

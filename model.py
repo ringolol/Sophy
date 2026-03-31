@@ -1,5 +1,6 @@
 from smolagents import OpenAIServerModel
 from rich.console import Console
+from rich.panel import Panel 
 
 console = Console()
 
@@ -19,6 +20,7 @@ class ThinkingModel(OpenAIServerModel):
         )
         self._apply_rate_limit()
         thinking = False
+        thinking_text = [] 
         for event in self.retryer(
             self.client.chat.completions.create,
             **completion_kwargs,
@@ -39,15 +41,25 @@ class ThinkingModel(OpenAIServerModel):
                     raw = choice.delta.model_extra or {}
                     reasoning = raw.get("reasoning") or getattr(choice.delta, "reasoning_content", None)
                     if reasoning:
-                        if not thinking:
-                            console.print("\n[dim italic]💭 Thinking:[/dim italic] ", end="")
-                            thinking = True
-                        console.print(f"[dim]{reasoning}[/dim]", end="", highlight=False)
+                        # if not thinking:
+                            # console.print("\n[dim italic]💭 Thinking:[/dim italic] ", end="")
+                        thinking_text.append(reasoning)
+                        thinking = True
+                        # console.print(f"[dim]{reasoning}[/dim]", end="", highlight=False)
                     elif thinking and choice.delta.content:
                         thinking = False
-                        console.print()
-                        console.rule(style="dim")
-                        console.print()
+                        console.print(Panel(
+                            "".join(thinking_text).strip(),
+                            title="💭 Thinking",
+                            title_align="left", 
+                            border_style="dim",   
+                            padding=(0, 1),
+                        ))
+                        thinking_text.clear()  
+                        # console.print()
+                        # console.rule(style="dim")
+                        # console.print()
+                        
                     yield ChatMessageStreamDelta(
                         content=choice.delta.content,
                         tool_calls=[
