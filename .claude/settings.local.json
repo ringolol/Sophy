@@ -3,7 +3,12 @@
     "allow": [
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:pypi.org)"
+      "WebFetch(domain:pypi.org)",
+      "Bash(ls:*)",
+      "Bash(grep -rn \"ManagedAgent\\\\|managed_agents\" \"/C/Users/creat/Documents/github/agent\" --include=\"*.py\" ! -path \"*/.venv/*\")",
+      "Bash(grep -r managed_agents C:/Users/creat/Documents/github/agent --include=*.py)",
+      "Bash(grep -r name= C:/Users/creat/Documents/github/agent --include=*.py)",
+      "Bash(pip show:*)"
     ]
   }
 }

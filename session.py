@@ -4,11 +4,15 @@ import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 
+from smolagents import ToolCallingAgent, Panel
 from smolagents.memory import TaskStep, ActionStep, ToolCall
 from smolagents.monitoring import Timing, TokenUsage
+from rich.table import Table
+
+from utils import console
 
 
-SESSIONS_DIR = "sessions"
+SESSIONS_DIR = ".sophy/sessions"
 @dataclass
 class ConversationEntry:
     task: str
@@ -117,6 +121,44 @@ def list_sessions() -> list[dict]:
     return sessions
 
 
+def load_session(agent, s: Session):
+    """Print session history and restore agent memory."""
+    if s.entries:
+        console.rule(f"[bold cyan]Session History ({len(s.entries)} entries)[/bold cyan]")
+        for entry in s.entries:
+            console.print(Panel(entry.task, title="[bold green]You[/bold green]", title_align="left", border_style="green", padding=(0, 1)))
+            console.print(Panel(entry.result, title="[bold yellow]Agent[/bold yellow]", title_align="left", border_style="yellow", padding=(0, 1)))
+        console.rule(style="dim")
+        console.print()
+        restore_memory(agent, s)
+
+
+def pick_session() -> Session:
+    saved = list_sessions()
+    table = Table(title="Sessions", show_header=True, header_style="bold cyan")
+    table.add_column("#", style="bold")
+    table.add_column("ID")
+    table.add_column("Date")
+    table.add_column("Entries", justify="right")
+    table.add_column("Preview")
+    table.add_row("0", "[green]New session[/green]", "", "", "")
+    for i, s in enumerate(saved, 1):
+        table.add_row(str(i), s['id'], s['created_at'][:10], str(s['entry_count']), s['preview'])
+    console.print(table)
+    choice = input("Choose session [0]: ").strip()
+    print("\033[A\033[2K", end="", flush=True)
+    if not choice or choice == "0":
+        return Session()
+    try:
+        idx = int(choice)
+        if 1 <= idx <= len(saved):
+            return Session.load(saved[idx - 1]["path"])
+    except ValueError:
+        pass
+    console.print("[red]Invalid choice, starting new session.[/red]")
+    return Session()
+
+
 def _step_from_dict(d: dict) -> TaskStep | ActionStep:
     """Reconstruct a memory step from its dict representation."""
     if "task" in d:
@@ -151,7 +193,7 @@ def _step_from_dict(d: dict) -> TaskStep | ActionStep:
     )
 
 
-def restore_memory(agent, session: "Session"):
+def restore_memory(agent: ToolCallingAgent, session: "Session"):
     """Restore agent memory from a loaded session."""
     agent.memory.reset()
     for entry in session.entries:

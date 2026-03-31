@@ -2,9 +2,14 @@ import difflib
 import functools
 import enum
 
+from smolagents.memory import ActionStep
+
 from rich.console import Console
 from rich.syntax import Syntax
 from rich.panel import Panel
+
+
+MAX_AGENT_STEPS = 30
 
 console = Console()
 
@@ -106,3 +111,14 @@ def confirm(fn):
         return fn(*args, **kwargs)
 
     return guarded_fn
+
+
+def remind_final_answer(step):
+    """Callback to remind agent to call final_answer when running low on steps."""
+    if not isinstance(step, ActionStep):
+        return
+    if step.step_number > MAX_AGENT_STEPS - 1:
+        step.observations = (step.observations or "") + (
+            "\n\n⚠️ You are running low on steps. "
+            "Call `final_answer` NOW with your best answer."
+        )
