@@ -123,84 +123,89 @@ def hide_tool_call_json(agent):
     ChatMessage.render_as_markdown = _clean_render
 
 
-def _patched_process_tool_calls(self, chat_message, memory_step):
-    """Patched version with custom panel border color."""
-    parallel_calls: dict[str, ToolCall] = {}
-    assert chat_message.tool_calls is not None
-    for chat_tool_call in chat_message.tool_calls:
-        tool_call = ToolCall(
-            name=chat_tool_call.function.name,
-            arguments=chat_tool_call.function.arguments,
-            id=chat_tool_call.id
-        )
-        yield tool_call
-        parallel_calls[tool_call.id] = tool_call
+def _make_patched_process_tool_calls(tool_color: str):
+    """Create a process_tool_calls method with a custom tool panel color."""
+    def _process_tool_calls(self, chat_message, memory_step):
+        parallel_calls: dict[str, ToolCall] = {}
+        assert chat_message.tool_calls is not None
+        for chat_tool_call in chat_message.tool_calls:
+            tool_call = ToolCall(
+                name=chat_tool_call.function.name,
+                arguments=chat_tool_call.function.arguments,
+                id=chat_tool_call.id
+            )
+            yield tool_call
+            parallel_calls[tool_call.id] = tool_call
 
-    def process_single_tool_call(tool_call: ToolCall) -> ToolOutput:
-        tool_name = tool_call.name
-        tool_arguments = tool_call.arguments or {}
-        self.logger.log(
-            Panel(
-                Text(f"Calling tool: '{tool_name}' with arguments: {tool_arguments}"), 
-                border_style=PANEL_COLORS["tool"],
-            ),
-            level=LogLevel.INFO,
-        )
-        tool_call_result = self.execute_tool_call(tool_name, tool_arguments)
-        tool_call_result_type = type(tool_call_result)
-        if tool_call_result_type in [AgentImage, AgentAudio]:
-            if tool_call_result_type == AgentImage:
-                observation_name = "image.png"
-            elif tool_call_result_type == AgentAudio:
-                observation_name = "audio.mp3"
-            self.state[observation_name] = tool_call_result
-            observation = f"Stored '{observation_name}' in memory."
+        def process_single_tool_call(tool_call: ToolCall) -> ToolOutput:
+            tool_name = tool_call.name
+            tool_arguments = tool_call.arguments or {}
+            self.logger.log(
+                Panel(
+                    Text(f"Calling tool: '{tool_name}' with arguments: {tool_arguments}"),
+                    border_style=tool_color,
+                ),
+                level=LogLevel.INFO,
+            )
+            tool_call_result = self.execute_tool_call(tool_name, tool_arguments)
+            tool_call_result_type = type(tool_call_result)
+            if tool_call_result_type in [AgentImage, AgentAudio]:
+                if tool_call_result_type == AgentImage:
+                    observation_name = "image.png"
+                elif tool_call_result_type == AgentAudio:
+                    observation_name = "audio.mp3"
+                self.state[observation_name] = tool_call_result
+                observation = f"Stored '{observation_name}' in memory."
+            else:
+                observation = str(tool_call_result).strip()
+            self.logger.log(
+                f"Observations: {observation.replace('[', '|')}",
+                level=LogLevel.INFO,
+            )
+            is_final_answer = tool_name == "final_answer"
+            return ToolOutput(
+                id=tool_call.id,
+                output=tool_call_result,
+                is_final_answer=is_final_answer,
+                observation=observation,
+                tool_call=tool_call,
+            )
+
+        outputs = {}
+        if len(parallel_calls) == 1:
+            tool_call = list(parallel_calls.values())[0]
+            tool_output = process_single_tool_call(tool_call)
+            outputs[tool_output.id] = tool_output
+            yield tool_output
         else:
-            observation = str(tool_call_result).strip()
-        self.logger.log(
-            f"Observations: {observation.replace('[', '|')}",
-            level=LogLevel.INFO,
+            with ThreadPoolExecutor(self.max_tool_threads) as executor:
+                futures = []
+                for tool_call in parallel_calls.values():
+                    ctx = copy_context()
+                    futures.append(executor.submit(ctx.run, process_single_tool_call, tool_call))
+                for future in as_completed(futures):
+                    tool_output = future.result()
+                    outputs[tool_output.id] = tool_output
+                    yield tool_output
+
+        memory_step.tool_calls = [parallel_calls[k] for k in sorted(parallel_calls.keys())]
+        memory_step.observations = memory_step.observations or ""
+        for tool_output in [outputs[k] for k in sorted(outputs.keys())]:
+            memory_step.observations += tool_output.observation + "\n"
+        memory_step.observations = (
+            memory_step.observations.rstrip("\n") if memory_step.observations else memory_step.observations
         )
-        is_final_answer = tool_name == "final_answer"
+    return _process_tool_calls
 
-        return ToolOutput(
-            id=tool_call.id,
-            output=tool_call_result,
-            is_final_answer=is_final_answer,
-            observation=observation,
-            tool_call=tool_call,
-        )
 
-    outputs = {}
-    if len(parallel_calls) == 1:
-        tool_call = list(parallel_calls.values())[0]
-        tool_output = process_single_tool_call(tool_call)
-        outputs[tool_output.id] = tool_output
-        yield tool_output
-    else:
-        with ThreadPoolExecutor(self.max_tool_threads) as executor:
-            futures = []
-            for tool_call in parallel_calls.values():
-                ctx = copy_context()
-                futures.append(executor.submit(ctx.run, process_single_tool_call, tool_call))
-            for future in as_completed(futures):
-                tool_output = future.result()
-                outputs[tool_output.id] = tool_output
-                yield tool_output
-
-    memory_step.tool_calls = [parallel_calls[k] for k in sorted(parallel_calls.keys())]
-    memory_step.observations = memory_step.observations or ""
-    for tool_output in [outputs[k] for k in sorted(outputs.keys())]:
-        memory_step.observations += tool_output.observation + "\n"
-    memory_step.observations = (
-        memory_step.observations.rstrip("\n") if memory_step.observations else memory_step.observations
-    )
+_patched_process_tool_calls = _make_patched_process_tool_calls(PANEL_COLORS["tool"])
 
 
 def apply_explorer_patches(agent):
     """Apply monkey patches for the explorer sub-agent (distinct colors, hidden observations)."""
     apply_custom_logger(agent, task_color="#4A9ECC", observation_color="#808080")
     hide_observation_logs(agent)
+    agent.process_tool_calls = _make_patched_process_tool_calls("#4A9ECC").__get__(agent)
 
 
 def apply_monkey_patches(agent):

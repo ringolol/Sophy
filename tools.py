@@ -325,6 +325,7 @@ EXPLORATION_TOOLS = [
     search_content,
     list_directory,
     get_tree,
+    final_answer,
 ]
 
 TOOLS = [
