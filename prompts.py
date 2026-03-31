@@ -1,9 +1,9 @@
 from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates
 
-from tools import TOOLS
+from tools import TOOLS, EXPLORATION_TOOLS
 
 
-DIRECT_PROMPT_TEMPLATE = """You are a task-solving agent that operates strictly through a Tool-Call Loop. You MUST solve the user's task by emitting valid JSON tool calls.
+DIRECT_PROMPT_TEMPLATE = """{agent_role}
 
 # The Loop
 1. **Action**: You output a JSON blob calling a tool.
@@ -48,11 +48,16 @@ def format_tool_description(tool) -> str:
     return f"- {tool.name}: {tool.description} Args: {{{', '.join(args)}}}"
 
 
-def build_direct_prompt(tools: list, project_description: str) -> str:
+ROLE_TASK_SOLVER = "You are a task-solving agent that operates strictly through a Tool-Call Loop. You MUST solve the user's task by emitting valid JSON tool calls."
+ROLE_EXPLORER = "You are a filesystem explorer agent that operates strictly through a Tool-Call Loop. You MUST fulfill the user's request by emitting valid JSON tool calls."
+
+
+def build_direct_prompt(tools: list, project_description: str, agent_role: str = ROLE_TASK_SOLVER) -> str:
     """Build the system prompt with tool descriptions generated from the tool objects."""
     lines = [format_tool_description(t) for t in tools]
     return DIRECT_PROMPT_TEMPLATE.format(
-        tools_description="\n".join(lines), 
+        agent_role=agent_role,
+        tools_description="\n".join(lines),
         project_description=project_description
     )
 
@@ -67,6 +72,17 @@ try:
 except FileNotFoundError:
     claud_md = ''
 
+explorer_prompt = PromptTemplates(
+    system_prompt=build_direct_prompt(EXPLORATION_TOOLS, "", agent_role=ROLE_EXPLORER),
+    planning=PlanningPromptTemplate(
+        initial_plan="",
+        update_plan_pre_messages="",
+        update_plan_post_messages="",
+    ),
+    managed_agent=ManagedAgentPromptTemplate(task="", report=""),
+    final_answer=FinalAnswerPromptTemplate(pre_messages="", post_messages=""),
+)
+
 direct_prompt = PromptTemplates(
     system_prompt=build_direct_prompt(TOOLS, project_description),
     planning=PlanningPromptTemplate(
@@ -74,6 +90,15 @@ direct_prompt = PromptTemplates(
         update_plan_pre_messages="",
         update_plan_post_messages="",
     ),
-    managed_agent=ManagedAgentPromptTemplate(task="", report=""),
+    managed_agent=ManagedAgentPromptTemplate(
+        task=(
+            "You are a filesystem explorer agent named '{{name}}'.\n"
+            "Your task:\n{{task}}\n\n"
+            "Use your tools to explore the filesystem and gather the requested information.\n"
+            "Be thorough but concise — include file paths, line numbers, and relevant code snippets.\n"
+            "Put everything in your final_answer call. Anything not passed to final_answer is lost."
+        ),
+        report="Exploration result from '{{name}}':\n{{final_answer}}",
+    ),
     final_answer=FinalAnswerPromptTemplate(pre_messages="", post_messages=""),
 )

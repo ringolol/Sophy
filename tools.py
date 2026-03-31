@@ -319,6 +319,14 @@ visit_webpage.description = "Reads a URL as markdown."
 final_answer = FinalAnswerTool()
 final_answer.description = "Returns your final answer."
 
+EXPLORATION_TOOLS = [
+    read_file,
+    search_files,
+    search_content,
+    list_directory,
+    get_tree,
+]
+
 TOOLS = [
     read_file,
     edit_file,

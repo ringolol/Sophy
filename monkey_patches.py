@@ -197,6 +197,12 @@ def _patched_process_tool_calls(self, chat_message, memory_step):
     )
 
 
+def apply_explorer_patches(agent):
+    """Apply monkey patches for the explorer sub-agent (distinct colors, hidden observations)."""
+    apply_custom_logger(agent, task_color="#4A9ECC", observation_color="#808080")
+    hide_observation_logs(agent)
+
+
 def apply_monkey_patches(agent):
     """Apply all monkey patches to an agent instance."""
     apply_custom_logger(agent)

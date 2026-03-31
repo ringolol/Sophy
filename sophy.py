@@ -1,14 +1,12 @@
-import signal
-
 from smolagents import AgentError, FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates, ToolCallingAgent, LogLevel
 from smolagents.memory import ActionStep
 
-from monkey_patches import apply_monkey_patches
+from monkey_patches import apply_monkey_patches, apply_explorer_patches
 from utils import ToolDeniedException, SupportedModels, console, remind_final_answer, MAX_AGENT_STEPS
 from model import ThinkingModel
-from tools import TOOLS, set_history_provider
+from tools import TOOLS, EXPLORATION_TOOLS, set_history_provider
 from session import Session, load_session, pick_session
-from prompts import direct_prompt
+from prompts import direct_prompt, explorer_prompt
 
 
 session = Session()
@@ -20,6 +18,25 @@ model = ThinkingModel(
     api_key="ollama",
 )
 
+explorer = ToolCallingAgent(
+    tools=EXPLORATION_TOOLS,
+    add_base_tools=False,
+    prompt_templates=explorer_prompt,
+    model=model,
+    max_steps=10,
+    verbosity_level=LogLevel.INFO,
+    stream_outputs=True,
+    name="explorer",
+    description=(
+        "Explores the filesystem: reads files, searches for files and content, "
+        "lists directories, and builds tree views. "
+        "Use this for complex multi-step exploration tasks. "
+        "For quick single-file reads, use your own read_file tool instead."
+    ),
+    provide_run_summary=False,
+)
+apply_explorer_patches(explorer)
+
 agent = ToolCallingAgent(
     tools=TOOLS,
     add_base_tools=False,
@@ -28,6 +45,7 @@ agent = ToolCallingAgent(
     max_steps=MAX_AGENT_STEPS,
     verbosity_level=LogLevel.INFO,
     stream_outputs=True,
+    managed_agents=[explorer],
     step_callbacks=[remind_final_answer],
 )
 apply_monkey_patches(agent)
@@ -68,12 +86,6 @@ def agent_loop():
             load_session(agent, session)
             continue
 
-        # Install SIGINT handler to gracefully interrupt the agent
-        def sigint_handler(sig, frame):
-            agent.interrupt()
-            raise KeyboardInterrupt()
-        prev_handler = signal.signal(signal.SIGINT, sigint_handler)
-
         try:
             result = agent.run(task_prefix + task, reset=False)
             task_prefix = ""
@@ -90,15 +102,20 @@ def agent_loop():
                 steps=agent.memory.get_full_steps(),
                 tools_used=tools_used,
             )
-            session.save_auto()
         except ToolDeniedException as e:
             console.print(f"\n[red]{e}[/red]\n")
             task_prefix = str(e) + '\n\n'
         except (AgentError, KeyboardInterrupt):
             console.print(f"\n[red]The execution was stopped manually[/red]\n")
             task_prefix = "User stopped the last tool execution manually. Be attentive User may ask you to explain or change something about the last task!\n\n"
+            session.add_entry(
+                task=task,
+                result="[interrupted]",
+                steps=agent.memory.get_full_steps(),
+                tools_used=[tc.name for step in agent.memory.steps if isinstance(step, ActionStep) and step.tool_calls for tc in step.tool_calls],
+            )
         finally:
-            signal.signal(signal.SIGINT, prev_handler)
+            session.save_auto()
 
 
 if __name__ == "__main__":

@@ -135,7 +135,7 @@ def load_session(agent, s: Session):
 
 def pick_session() -> Session:
     saved = list_sessions()
-    table = Table(title="Sessions", show_header=True, header_style="bold cyan")
+    table = Table(title="Sessions", show_header=True, header_style="bold cyan", show_edge=False)
     table.add_column("#", style="bold")
     table.add_column("ID")
     table.add_column("Date")
