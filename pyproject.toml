@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "sophy"
+version = "0.1.0"
+description = "A coding agent harness"
+requires-python = ">=3.11"
+dependencies = [
+    "smolagents",
+    "requests",
+]
+
+[project.scripts]
+sophy = "sophy:main"

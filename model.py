@@ -59,9 +59,10 @@ class ThinkingModel(OpenAIServerModel):
                         content=choice.delta.content,
                         tool_calls=[
                             ChatMessageToolCallStreamDelta(
-                                index=d.index, id=d.id, type=d.type, function=d.function,
+                                index=d.index if d.index is not None else i,
+                                id=d.id, type=d.type, function=d.function,
                             )
-                            for d in choice.delta.tool_calls
+                            for i, d in enumerate(choice.delta.tool_calls)
                         ] if choice.delta.tool_calls else None,
                     )
                 elif not getattr(choice, "finish_reason", None):

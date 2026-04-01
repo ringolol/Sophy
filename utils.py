@@ -34,6 +34,9 @@ console = Console()
 class SupportedModels(enum.Enum):
     qwen_3_5_35b_a3b = "qwen3.5:35b-a3b"
     glm_4_7_flash_30b = "glm-4.7-flash"
+    gemini_2_5_flash = "gemini-2.5-flash"
+    gemini_3_flash = "gemini-3-flash-preview"
+    gemini_3_27b = "gemma-3-27b-it"
 
 
 class ToolDeniedException(BaseException):

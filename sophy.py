@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import os
 import traceback
@@ -18,13 +20,38 @@ session_holder = [Session()]
 set_history_provider(session_holder[0].get_summary)
 
 parser = argparse.ArgumentParser(description="Sophy coding agent harness")
-parser.add_argument("--api_base", type=str, default=os.environ.get("SOPHY_MODEL_API", "http://localhost:11434/v1"), help="API base URL for the model")
+_gemini_key = os.environ.get("GEMINI_API_KEY")
+_use_gemini = _gemini_key is not None
+
+parser.add_argument(
+        "--api_base", 
+        type=str,
+        default=os.environ.get(
+            "SOPHY_MODEL_API", 
+            "https://generativelanguage.googleapis.com/v1beta/openai/" 
+                if _use_gemini else "http://localhost:11434/v1"
+        ), 
+        help="API base URL for the model"
+)
+parser.add_argument(
+        "--api_key", 
+        type=str, 
+        default=_gemini_key or "ollama", 
+        help="API key for the model"
+)
+parser.add_argument(
+        "--model", 
+        type=str, 
+        default=SupportedModels.gemini_3_27b.value 
+            if _use_gemini else SupportedModels.qwen_3_5_35b_a3b.value, 
+        help="Model ID to use"
+)
 args = parser.parse_args()
 
 model = ThinkingModel(
-    model_id=SupportedModels.qwen_3_5_35b_a3b.value,
+    model_id=args.model,
     api_base=args.api_base,
-    api_key="ollama",
+    api_key=args.api_key,
 )
 
 explorer = ToolCallingAgent(
@@ -113,7 +140,7 @@ def agent_loop():
             )
         except (KeyboardInterrupt, ToolDeniedException):
             console.print(f"\n[red]The execution was stopped manually[/red]\n")
-            task_prefix = "User stopped the last tool execution manually. Be attentive User may ask you to explain or change something about the last task!\n\n"
+            task_prefix = "[User stopped the last tool execution manually! Be attentive User could ask you to change something about the last task!]\n\n"
             session_holder[0].add_entry(
                 task=task,
                 result="[interrupted]",
@@ -126,5 +153,9 @@ def agent_loop():
             session_holder[0].save_auto()
 
 
-if __name__ == "__main__":
+def main():
     agent_loop()
+
+
+if __name__ == "__main__":
+    main()
