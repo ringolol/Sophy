@@ -101,6 +101,7 @@ def maybe_compress(agent, session_holder: list) -> None:
 
     context_window = get_context_window(agent.model.model_id)
     usage_ratio = input_tokens / context_window
+    console.print(f"[dim]context: [yellow]{usage_ratio*100:.0f}%[/yellow] ({input_tokens}/{context_window})[/dim]")
     if usage_ratio < COMPRESSION_THRESHOLD:
         return
 

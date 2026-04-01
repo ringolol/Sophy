@@ -6,7 +6,7 @@ from smolagents import tool
 from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
 from smolagents.local_python_executor import InterpreterError
 
-from utils import confirm
+from utils import confirm, path_expand
 
 
 _history_provider = None
@@ -30,6 +30,7 @@ def get_conversation_history(last_n: int = 5) -> str:
     return _history_provider(last_n)
 
 @tool
+@path_expand
 def read_file(file_path: str) -> str:
     """Reads a file.
 
@@ -44,6 +45,7 @@ def read_file(file_path: str) -> str:
 
 @tool
 @confirm
+@path_expand
 def write_new_file(file_path: str, content: str) -> str:
     """Writes a new file.
 
@@ -57,6 +59,7 @@ def write_new_file(file_path: str, content: str) -> str:
     return f"Written {len(content)} chars to {file_path}"
 
 @tool
+@path_expand
 def search_files(pattern: str, directory: str = ".") -> str:
     """Glob search for files.
 
@@ -70,6 +73,7 @@ def search_files(pattern: str, directory: str = ".") -> str:
     return "\n".join(matches[:50])
 
 @tool
+@path_expand
 def search_content(text_pattern: str, directory: str = ".", file_pattern: str = "*") -> str:
     """Searches file contents for a text pattern (grep).
 
@@ -128,6 +132,7 @@ def run_command(command: str) -> str:
 
 @tool
 @confirm
+@path_expand
 def edit_file(file_path: str, old_content: str, new_content: str) -> str:
     """Edits a file by replacing an exact match of old_content with new_content.
 
@@ -150,6 +155,7 @@ def edit_file(file_path: str, old_content: str, new_content: str) -> str:
 
 @tool
 @confirm
+@path_expand
 def insert_text(file_path: str, line_number: int, content: str) -> str:
     """Inserts text before a given line number.
 
@@ -178,6 +184,7 @@ def ask_user(question: str) -> str:
     return input(f"{question}\n❯ ").strip()
 
 @tool
+@path_expand
 def list_directory(path: str = ".") -> str:
     """Lists directory contents.
 
@@ -206,6 +213,7 @@ def list_directory(path: str = ".") -> str:
         return f"Error: {str(e)}"
 
 @tool
+@path_expand
 def get_tree(path: str = ".", max_depth: int = 5) -> str:
     """Returns a directory tree view with depth limit.
 
@@ -244,6 +252,7 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
 
 @tool
 @confirm
+@path_expand
 def delete_file(file_path: str) -> str:
     """Deletes a file.
     
@@ -262,6 +271,7 @@ def delete_file(file_path: str) -> str:
 
 @tool
 @confirm
+@path_expand
 def move_file(source: str, destination: str) -> str:
     """Moves a file or a directory.
     

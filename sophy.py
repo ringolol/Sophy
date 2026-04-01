@@ -1,3 +1,5 @@
+import argparse
+import os
 import traceback
 
 from smolagents import ToolCallingAgent, LogLevel
@@ -15,9 +17,13 @@ from prompts import direct_solver_prompt, explorer_prompt
 session_holder = [Session()]
 set_history_provider(session_holder[0].get_summary)
 
+parser = argparse.ArgumentParser(description="Sophy coding agent harness")
+parser.add_argument("--api_base", type=str, default=os.environ.get("SOPHY_MODEL_API", "http://localhost:11434/v1"), help="API base URL for the model")
+args = parser.parse_args()
+
 model = ThinkingModel(
     model_id=SupportedModels.qwen_3_5_35b_a3b.value,
-    api_base="http://localhost:11434/v1",
+    api_base=args.api_base,
     api_key="ollama",
 )
 

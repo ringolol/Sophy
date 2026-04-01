@@ -1,3 +1,4 @@
+import os
 import difflib
 import functools
 import enum
@@ -133,12 +134,26 @@ def confirm(fn):
     return guarded_fn
 
 
+def path_expand(fn):
+    """Expands path arguments"""
+
+    @functools.wraps(fn)
+    def expanded_args_fn(*args, **kwargs):
+        to_expand = ['file_path', 'directory', 'path', 'source', 'destination']
+        for kwarg in to_expand:
+            if kwarg in kwargs:
+                kwargs[kwarg] = os.path.expanduser(kwargs[kwarg])
+        return fn(*args, **kwargs)
+
+    return expanded_args_fn
+
+
 def remind_final_answer(step):
     """Callback to remind agent to call final_answer when running low on steps."""
     if not isinstance(step, ActionStep):
         return
     if step.step_number > MAX_AGENT_STEPS - 1:
         step.observations = (step.observations or "") + (
-            "\n\n⚠️ You are running low on steps. "
+            "\n\n⚠️ You have no more steps! "
             "Call `final_answer` NOW with your best answer."
         )
