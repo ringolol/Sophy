@@ -170,7 +170,7 @@ def insert_text(file_path: str, line_number: int, content: str) -> str:
 
 @tool
 def ask_user(question: str) -> str:
-    """Ask User a question. Use it to clarify a task or choose a solution
+    """Do not hesitate to use it for clarification, confirmation, or additional information from User!
     
     Args:
         question: a question to ask
@@ -334,6 +334,7 @@ TOOLS = [
     insert_text,
     write_new_file,
     run_command,
+    ask_user,
     search_content,
     search_files,
     list_directory,

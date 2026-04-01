@@ -23,7 +23,7 @@ class ToolDeniedException(BaseException):
     pass
 
 
-def _print_diff(old_lines, new_lines, path):
+def _print_diff(old_lines, new_lines, path) -> bool:
     """Print a colored unified diff with 3 lines of context."""
     diff = list(difflib.unified_diff(
         old_lines, new_lines,
@@ -32,9 +32,10 @@ def _print_diff(old_lines, new_lines, path):
     ))
     if not diff:
         console.print("[dim](no changes)[/dim]")
-        return
+        return False
     diff_text = "".join(diff)
     console.print(Syntax(diff_text, "diff", theme="monokai", word_wrap=True))
+    return True
 
 
 def _preview_edit(kwargs):
@@ -98,7 +99,10 @@ def confirm(fn):
         if previewer:
             old_lines, new_lines, path = previewer(kwargs)
             if old_lines is not None:
-                _print_diff(old_lines, new_lines, path)
+                if not _print_diff(old_lines, new_lines, path):
+                    def dummy(*args, **kwargs):
+                        return "(no changes)"
+                    return dummy
             else:
                 console.print(f"[green](new file: {path})[/green]")
         else:

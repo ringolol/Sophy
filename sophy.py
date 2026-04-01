@@ -29,6 +29,7 @@ explorer = ToolCallingAgent(
     verbosity_level=LogLevel.INFO,
     stream_outputs=True,
     name="explorer",
+    description="-",
     provide_run_summary=False,
     step_callbacks=[remind_final_answer],
 )
@@ -46,7 +47,6 @@ main_agent = ToolCallingAgent(
     step_callbacks=[remind_final_answer],
 )
 apply_monkey_patches(main_agent)
-
 
 def agent_loop():
     console.print(f'[dim]{main_agent.system_prompt}[/dim]')
