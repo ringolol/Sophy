@@ -4,7 +4,7 @@ import argparse
 import os
 import traceback
 
-from smolagents import ToolCallingAgent, LogLevel
+from smolagents import ToolCallingAgent, LogLevel, CodeAgent
 from smolagents.memory import ActionStep
 
 from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
@@ -13,7 +13,7 @@ from context_compression import maybe_compress, compress
 from model import ThinkingModel
 from tools import TOOLS, EXPLORATION_TOOLS, set_history_provider
 from session import Session, load_session, pick_session
-from prompts import direct_solver_prompt, explorer_prompt
+from prompts import direct_solver_prompt, direct_code_solver_prompt, explorer_prompt
 
 
 session_holder = [Session()]
@@ -41,19 +41,57 @@ else:
 
 
 def _make_model(preset: ModelPreset) -> ThinkingModel:
+    kwargs = {}
+    if not preset.system_prompt:
+        kwargs["custom_role_conversions"] = {
+            "system": "user",
+            "tool-call": "assistant",
+            "tool-response": "user",
+        }
     return ThinkingModel(
         model_id=preset.model_id,
         api_base=preset.api_base,
         api_key=preset.api_key,
+        **kwargs,
     )
 
 
+def _make_main_agent(preset: ModelPreset, model: ThinkingModel):
+    if preset.tools:
+        agent = ToolCallingAgent(
+            tools=TOOLS,
+            add_base_tools=False,
+            prompt_templates=direct_solver_prompt,
+            model=model,
+            max_steps=MAX_AGENT_STEPS,
+            verbosity_level=LogLevel.INFO,
+            stream_outputs=True,
+            managed_agents=[explorer],
+            step_callbacks=[remind_final_answer],
+        )
+    else:
+        agent = CodeAgent(
+            tools=TOOLS,
+            add_base_tools=False,
+            prompt_templates=direct_code_solver_prompt,
+            model=model,
+            max_steps=MAX_AGENT_STEPS,
+            verbosity_level=LogLevel.INFO,
+            stream_outputs=True,
+            managed_agents=[explorer],
+            step_callbacks=[remind_final_answer],
+            code_block_tags="markdown",
+        )
+    apply_monkey_patches(agent)
+    return agent
+
+
 def switch_model(preset: ModelPreset):
-    global _active_preset
+    global _active_preset, main_agent
     _active_preset = preset
     new_model = _make_model(preset)
-    main_agent.model = new_model
     explorer.model = new_model
+    main_agent = _make_main_agent(preset, new_model)
     console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
 
 
@@ -74,18 +112,7 @@ explorer = ToolCallingAgent(
 )
 apply_explorer_monkey_patches(explorer)
 
-main_agent = ToolCallingAgent(
-    tools=TOOLS,
-    add_base_tools=False,
-    prompt_templates=direct_solver_prompt,
-    model=model,
-    max_steps=MAX_AGENT_STEPS,
-    verbosity_level=LogLevel.INFO,
-    stream_outputs=True,
-    managed_agents=[explorer],
-    step_callbacks=[remind_final_answer],
-)
-apply_monkey_patches(main_agent)
+main_agent = _make_main_agent(_active_preset, model)
 
 def agent_loop():
     console.print(f'[dim]{main_agent.system_prompt}[/dim]')

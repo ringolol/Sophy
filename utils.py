@@ -42,6 +42,7 @@ class ModelPreset:
     api_key: str
     label: str
     tools: bool = True
+    system_prompt: bool = True
 
 
 def _resolve_env(value: str) -> str:
@@ -62,6 +63,7 @@ def load_config() -> list[ModelPreset]:
             api_key=_resolve_env(m["api_key"]),
             label=m.get("label", m["model_id"]),
             tools=m.get("tools", True),
+            system_prompt=m.get("system_prompt", True),
         )
         for m in data.get("models", [])
     ]
@@ -74,7 +76,12 @@ def pick_model(models: list[ModelPreset], current_model_id: str | None = None) -
     table.add_column("Model")
     table.add_column("API")
     for i, p in enumerate(models):
-        api_label = "Gemini" if "google" in p.api_base else "Ollama"
+        if "google" in p.api_base:
+            api_label = "Gemini"
+        elif "yandex" in p.api_base:
+            api_label = "Yandex"
+        else:
+            api_label = "Ollama"
         marker = " [green](current)[/green]" if p.model_id == current_model_id else ""
         table.add_row(str(i), p.label + marker, api_label)
     console.print(table)
