@@ -2,6 +2,7 @@ import difflib
 import functools
 import enum
 
+import requests
 from smolagents.memory import ActionStep
 
 from rich.console import Console
@@ -10,6 +11,21 @@ from rich.panel import Panel
 
 
 MAX_AGENT_STEPS = 30
+DEFAULT_CONTEXT_WINDOW = 128000
+
+
+_cached_context_window: int | None = None
+
+
+def get_context_window(model_id: str, api_base: str = "http://localhost:11434") -> int:
+    global _cached_context_window
+    try:
+        resp = requests.post(f"{api_base}/api/show", json={"name": model_id})
+        resp.raise_for_status()
+        _cached_context_window = resp.json().get("model_info", {}).get("num_ctx", DEFAULT_CONTEXT_WINDOW)
+    except (requests.RequestException, KeyError):
+        pass
+    return _cached_context_window or DEFAULT_CONTEXT_WINDOW
 
 console = Console()
 
