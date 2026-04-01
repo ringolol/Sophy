@@ -1,7 +1,8 @@
+import json
 import os
 import difflib
 import functools
-import enum
+from dataclasses import dataclass
 
 import requests
 from smolagents.memory import ActionStep
@@ -31,12 +32,62 @@ def get_context_window(model_id: str, api_base: str = "http://localhost:11434") 
 console = Console()
 
 
-class SupportedModels(enum.Enum):
-    qwen_3_5_35b_a3b = "qwen3.5:35b-a3b"
-    glm_4_7_flash_30b = "glm-4.7-flash"
-    gemini_2_5_flash = "gemini-2.5-flash"
-    gemini_3_flash = "gemini-3-flash-preview"
-    gemini_3_27b = "gemma-3-27b-it"
+CONFIG_PATH = ".sophy/config.json"
+
+
+@dataclass
+class ModelPreset:
+    model_id: str
+    api_base: str
+    api_key: str
+    label: str
+    tools: bool = True
+
+
+def _resolve_env(value: str) -> str:
+    if value.startswith("$"):
+        return os.environ.get(value[1:], "")
+    return value
+
+
+def load_config() -> list[ModelPreset]:
+    if not os.path.isfile(CONFIG_PATH):
+        return []
+    with open(CONFIG_PATH) as f:
+        data = json.load(f)
+    return [
+        ModelPreset(
+            model_id=m["model_id"],
+            api_base=m["api_base"],
+            api_key=_resolve_env(m["api_key"]),
+            label=m.get("label", m["model_id"]),
+            tools=m.get("tools", True),
+        )
+        for m in data.get("models", [])
+    ]
+
+
+def pick_model(models: list[ModelPreset], current_model_id: str | None = None) -> ModelPreset:
+    from rich.table import Table
+    table = Table(title="Models", show_header=True, header_style="bold cyan", show_edge=False)
+    table.add_column("#", style="bold")
+    table.add_column("Model")
+    table.add_column("API")
+    for i, p in enumerate(models):
+        api_label = "Gemini" if "google" in p.api_base else "Ollama"
+        marker = " [green](current)[/green]" if p.model_id == current_model_id else ""
+        table.add_row(str(i), p.label + marker, api_label)
+    console.print(table)
+    choice = input("Choose model [0]: ").strip()
+    print("\033[A\033[2K", end="", flush=True)
+    try:
+        idx = int(choice) if choice else 0
+        if 0 <= idx < len(models):
+            return models[idx]
+    except ValueError:
+        pass
+    console.print("[red]Invalid choice, keeping current model.[/red]")
+    return next((p for p in models if p.model_id == current_model_id), models[0])
 
 
 class ToolDeniedException(BaseException):

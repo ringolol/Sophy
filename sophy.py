@@ -8,7 +8,7 @@ from smolagents import ToolCallingAgent, LogLevel
 from smolagents.memory import ActionStep
 
 from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
-from utils import ToolDeniedException, SupportedModels, console, remind_final_answer, MAX_AGENT_STEPS
+from utils import ToolDeniedException, ModelPreset, load_config, pick_model, console, remind_final_answer, MAX_AGENT_STEPS
 from context_compression import maybe_compress, compress
 from model import ThinkingModel
 from tools import TOOLS, EXPLORATION_TOOLS, set_history_provider
@@ -20,39 +20,44 @@ session_holder = [Session()]
 set_history_provider(session_holder[0].get_summary)
 
 parser = argparse.ArgumentParser(description="Sophy coding agent harness")
-_gemini_key = os.environ.get("GEMINI_API_KEY")
-_use_gemini = _gemini_key is not None
-
-parser.add_argument(
-        "--api_base", 
-        type=str,
-        default=os.environ.get(
-            "SOPHY_MODEL_API", 
-            "https://generativelanguage.googleapis.com/v1beta/openai/" 
-                if _use_gemini else "http://localhost:11434/v1"
-        ), 
-        help="API base URL for the model"
-)
-parser.add_argument(
-        "--api_key", 
-        type=str, 
-        default=_gemini_key or "ollama", 
-        help="API key for the model"
-)
-parser.add_argument(
-        "--model", 
-        type=str, 
-        default=SupportedModels.gemini_3_27b.value 
-            if _use_gemini else SupportedModels.qwen_3_5_35b_a3b.value, 
-        help="Model ID to use"
-)
+parser.add_argument("--api_base", type=str, default=None, help="API base URL for the model")
+parser.add_argument("--api_key", type=str, default=None, help="API key for the model")
+parser.add_argument("--model", type=str, default=None, help="Model ID to use")
 args = parser.parse_args()
 
-model = ThinkingModel(
-    model_id=args.model,
-    api_base=args.api_base,
-    api_key=args.api_key,
-)
+_all_presets = load_config()
+if args.model and args.api_base and args.api_key:
+    _all_presets.append(ModelPreset(args.model, args.api_base, args.api_key, "Custom"))
+
+_available_presets = [p for p in _all_presets if p.api_key]
+if not _available_presets:
+    console.print("[red]No models available. Provide --model/--api_base/--api_key args or create .sophy/config.json[/red]")
+    raise SystemExit(1)
+
+if len(_available_presets) == 1:
+    _active_preset = _available_presets[0]
+else:
+    _active_preset = pick_model(_available_presets)
+
+
+def _make_model(preset: ModelPreset) -> ThinkingModel:
+    return ThinkingModel(
+        model_id=preset.model_id,
+        api_base=preset.api_base,
+        api_key=preset.api_key,
+    )
+
+
+def switch_model(preset: ModelPreset):
+    global _active_preset
+    _active_preset = preset
+    new_model = _make_model(preset)
+    main_agent.model = new_model
+    explorer.model = new_model
+    console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
+
+
+model = _make_model(_active_preset)
 
 explorer = ToolCallingAgent(
     tools=EXPLORATION_TOOLS,
@@ -86,7 +91,8 @@ def agent_loop():
     console.print(f'[dim]{main_agent.system_prompt}[/dim]')
     session_holder[0] = pick_session()
     console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
-    console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /compress to compress context. Ctrl+C to stop execution\n")
+    console.print(f"[dim][bold]Model:[/bold] {_active_preset.label}[/dim]")
+    console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /model to switch model, /compress to compress context. Ctrl+C to stop execution\n")
     load_session(main_agent, session_holder[0])
 
     task_prefix = ""
@@ -118,6 +124,10 @@ def agent_loop():
             session_holder[0] = pick_session()
             console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]\n")
             load_session(main_agent, session_holder[0])
+            continue
+        if task == "/model":
+            preset = pick_model(_available_presets, _active_preset.model_id)
+            switch_model(preset)
             continue
 
         try:
