@@ -1,15 +1,17 @@
 {
   "models": [
     {
-      "model_id": "qwen3.5:35b-a3b",
       "label": "Qwen 3.5 35B (Ollama)",
+      "model_id": "qwen3.5:35b-a3b",
+      "context": 128000,
       "api_base": "http://192.168.0.107:11434/v1",
       "api_key": "ollama",
       "tools": true
     },
     {
-      "model_id": "gemma-3-27b-it",
       "label": "Gemma 3 27B",
+      "model_id": "gemma-3-27b-it",
+      "context": 128000,
       "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
       "api_key": "$GEMINI_API_KEY",
       "tools": false,
@@ -17,44 +19,51 @@
       "explorer": true
     },
     {
-      "model_id": "gpt://b1gdfe7f2of853ggtj6r/gemma-3-27b-it/latest",
-      "label": "Gemma 3 27B Ya",
-      "api_base": "https://ai.api.cloud.yandex.net/v1",
-      "api_key": "$YANDEX_API_KEY",
+      "label": "Gemma 3 12B",
+      "model_id": "gemma-3-12b-it",
+      "context": 128000,
+      "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "api_key": "$GEMINI_API_KEY",
       "tools": false,
-      "system_prompt": false
+      "system_prompt": false,
+      "explorer": true
     },
     {
-      "model_id": "gpt://b1gdfe7f2of853ggtj6r/deepseek-v32/latest",
       "label": "DeepSeek 3.2",
+      "model_id": "gpt://b1gdfe7f2of853ggtj6r/deepseek-v32/latest",
+      "context": 131072,
       "api_base": "https://ai.api.cloud.yandex.net/v1",
       "api_key": "$YANDEX_API_KEY",
       "tools": false
     },
     {
-      "model_id": "gemini-3.1-flash-lite-preview",
       "label": "Gemini 3.1 Flash Lite",
+      "model_id": "gemini-3.1-flash-lite-preview",
+      "context": 1048576,
       "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
       "api_key": "$GEMINI_API_KEY",
       "tools": true
     },
     {
-      "model_id": "gemini-2.5-flash-lite",
       "label": "Gemini 2.5 Flash Lite",
+      "model_id": "gemini-2.5-flash-lite",
+      "context": 1048576,
       "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
       "api_key": "$GEMINI_API_KEY",
       "tools": true
     },
     {
-      "model_id": "gemini-2.5-flash",
-      "label": "Gemini 2.5 Flash",
-      "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
-      "api_key": "$GEMINI_API_KEY",
-      "tools": true
-    },
-    {
-      "model_id": "gemini-3-flash-preview",
       "label": "Gemini 3 Flash",
+      "model_id": "gemini-3-flash-preview",
+      "context": 1048576,
+      "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "api_key": "$GEMINI_API_KEY",
+      "tools": true
+    },
+    {
+      "label": "Gemini 2.5 Flash",
+      "model_id": "gemini-2.5-flash",
+      "context": 1048576,
       "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
       "api_key": "$GEMINI_API_KEY",
       "tools": true

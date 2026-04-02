@@ -1,4 +1,5 @@
 .venv
 .env
 *.pyc
-.sophy
+.sophy/
+!.sophy/config.json

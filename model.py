@@ -2,12 +2,20 @@ from smolagents import OpenAIServerModel
 from rich.console import Console
 from rich.panel import Panel 
 
+from utils import print_debug
+
 console = Console()
 
 
 class ThinkingModel(OpenAIServerModel):
+    def __init__(self, *args, context_window=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.context_window = context_window
+
     def generate_stream(self, messages, stop_sequences=None, response_format=None, tools_to_call_from=None, **kwargs):
         from smolagents.models import ChatMessageStreamDelta, ChatMessageToolCallStreamDelta, TokenUsage
+        if self.context_window:
+            kwargs["max_tokens"] = self.context_window
         completion_kwargs = self._prepare_completion_kwargs(
             messages=messages,
             stop_sequences=stop_sequences,
@@ -70,4 +78,4 @@ class ThinkingModel(OpenAIServerModel):
                     )
                 elif not getattr(choice, "finish_reason", None):
                     raise ValueError(f"No content or tool calls in event: {event}")
-        print(f"[DEBUG RAW OUTPUT]\n{''.join(debug_chunks)}\n[/DEBUG]")
+        print_debug(f"[DEBUG RAW OUTPUT]\n{''.join(debug_chunks)}\n[/DEBUG]")

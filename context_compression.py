@@ -106,7 +106,10 @@ def maybe_compress(agent, session_holder: list) -> None:
         return
 
     console.print(
-        f"\n[bold yellow]Context compression auto-triggered[/bold yellow] "
+        f"\n[bold yellow]Context usage high[/bold yellow] "
         f"({input_tokens}/{context_window} tokens, {usage_ratio:.0%} used)"
     )
+    if input("Compress context? [y/n]: ").strip().lower() != "y":
+        return
+
     compress(agent, session_holder)

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 import traceback
 
 from smolagents import ToolCallingAgent, LogLevel, CodeAgent
@@ -16,15 +15,18 @@ from session import Session, load_session, pick_session
 from prompts import direct_solver_prompt, direct_code_solver_prompt, explorer_prompt
 
 
+# session
 session_holder = [Session()]
 set_history_provider(session_holder[0].get_summary)
 
+# arguments
 parser = argparse.ArgumentParser(description="Sophy coding agent harness")
 parser.add_argument("--api_base", type=str, default=None, help="API base URL for the model")
 parser.add_argument("--api_key", type=str, default=None, help="API key for the model")
 parser.add_argument("--model", type=str, default=None, help="Model ID to use")
 args = parser.parse_args()
 
+# models
 _all_presets = load_config()
 if args.model and args.api_base and args.api_key:
     _all_presets.append(ModelPreset(args.model, args.api_base, args.api_key, "Custom"))
@@ -45,7 +47,6 @@ if explorer_presets:
 else:
     _explorer_preset = _active_preset
 
-
 def _make_model(preset: ModelPreset) -> ThinkingModel:
     kwargs = {}
     if not preset.system_prompt:
@@ -58,9 +59,9 @@ def _make_model(preset: ModelPreset) -> ThinkingModel:
         model_id=preset.model_id,
         api_base=preset.api_base,
         api_key=preset.api_key,
+        context_window=preset.context,
         **kwargs,
     )
-
 
 def _make_main_agent(preset: ModelPreset, model: ThinkingModel):
     base_kwargs = dict(
@@ -90,7 +91,6 @@ def _make_main_agent(preset: ModelPreset, model: ThinkingModel):
     apply_monkey_patches(agent)
     return agent
 
-
 def switch_model(preset: ModelPreset):
     global _active_preset, main_agent
     _active_preset = preset
@@ -98,11 +98,10 @@ def switch_model(preset: ModelPreset):
     main_agent = _make_main_agent(preset, new_model)
     console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
 
-
-# Create separate models for explorer and main agent
 explorer_model = _make_model(_explorer_preset)
 main_model = _make_model(_active_preset)
 
+# agents
 explorer = ToolCallingAgent(
     tools=EXPLORATION_TOOLS,
     add_base_tools=False,
@@ -119,6 +118,7 @@ explorer = ToolCallingAgent(
 apply_explorer_monkey_patches(explorer)
 
 main_agent = _make_main_agent(_active_preset, main_model)
+
 
 def agent_loop():
     console.print(f'[dim]{main_agent.system_prompt}[/dim]')

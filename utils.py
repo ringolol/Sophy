@@ -41,6 +41,7 @@ class ModelPreset:
     api_base: str
     api_key: str
     label: str
+    context: int = DEFAULT_CONTEXT_WINDOW
     tools: bool = True
     system_prompt: bool = True
     explorer: bool = False
@@ -63,6 +64,7 @@ def load_config() -> list[ModelPreset]:
             api_base=m["api_base"],
             api_key=_resolve_env(m["api_key"]),
             label=m.get("label", m["model_id"]),
+            context=m.get("context", DEFAULT_CONTEXT_WINDOW),
             tools=m.get("tools", True),
             system_prompt=m.get("system_prompt", True),
             explorer=m.get("explorer", False),
@@ -79,11 +81,11 @@ def pick_model(models: list[ModelPreset], current_model_id: str | None = None) -
     table.add_column("API")
     for i, p in enumerate(models):
         if "google" in p.api_base:
-            api_label = "Gemini"
+            api_label = "[cyan]Gemini[/cyan]"
         elif "yandex" in p.api_base:
-            api_label = "Yandex"
+            api_label = "[red]Yandex[/red]"
         else:
-            api_label = "Ollama"
+            api_label = "[yellow]Ollama[/yellow]"
         marker = " [green](current)[/green]" if p.model_id == current_model_id else ""
         table.add_row(str(i), p.label + marker, api_label)
     console.print(table)
@@ -220,3 +222,9 @@ def remind_final_answer(step):
             "\n\n⚠️ You have no more steps! "
             "Call `final_answer` NOW with your best answer."
         )
+
+@functools.wraps(console.print)
+def print_debug(*args, **kwargs):
+    if not os.environ.get("DEBUG", ""):
+        return
+    console.print(*args, **kwargs)
