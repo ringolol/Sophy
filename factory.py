@@ -35,59 +35,51 @@ def make_model(preset: ModelPreset) -> ThinkingModel:
         **kwargs,
     )
 
-def make_solver_agent(preset: ModelPreset, model: ThinkingModel, explorer_agent):
+def make_agent(
+    role: AgentRole,
+    model: ThinkingModel,
+    tools: list,
+    extra_kwargs: dict = None,
+    monkey_patch_func=None,
+    use_code_format: bool = False
+):
     base_kwargs = dict(
-        tools=TOOLS,
+        tools=tools,
         add_base_tools=False,
         model=model,
         max_steps=MAX_AGENT_STEPS,
         verbosity_level=LogLevel.INFO,
         stream_outputs=True,
-        managed_agents=[explorer_agent],
         step_callbacks=[remind_final_answer],
     )
-    if preset.tools:
-        agent = ToolCallingAgent(
-            **{
-                **base_kwargs,
-                "prompt_templates": build_prompt(AgentRole.SOLVER, use_code_format=False),
-            }
-        )
-    else:
-        agent = CodeAgent(
-            **{
-                **base_kwargs,
-                "prompt_templates": build_prompt(AgentRole.SOLVER, use_code_format=True),
-            }
-        )
-    apply_monkey_patches(agent)
+    if extra_kwargs:
+        base_kwargs.update(extra_kwargs)
+
+    agent_class = CodeAgent if use_code_format else ToolCallingAgent
+    agent = agent_class(
+        **base_kwargs,
+        prompt_templates=build_prompt(role, use_code_format=use_code_format),
+    )
+    if monkey_patch_func:
+        monkey_patch_func(agent)
     return agent
 
-def make_explorer_agent(model: ThinkingModel, use_code_format: bool = False):
-    base_kwargs = dict(
-        tools=EXPLORATION_TOOLS,
-        add_base_tools=False,
+def make_solver_agent(preset: ModelPreset, model: ThinkingModel, explorer_agent):
+    return make_agent(
+        role=AgentRole.SOLVER,
         model=model,
-        max_steps=MAX_AGENT_STEPS,
-        verbosity_level=LogLevel.INFO,
-        stream_outputs=True,
-        name="explorer",
-        description="-",
-        step_callbacks=[remind_final_answer],
+        tools=TOOLS,
+        extra_kwargs={"managed_agents": [explorer_agent]},
+        monkey_patch_func=apply_monkey_patches,
+        use_code_format=not preset.tools
     )
-    if use_code_format:
-        explorer = CodeAgent(
-            **{
-                **base_kwargs,
-                "prompt_templates": build_prompt(AgentRole.EXPLORER, use_code_format=True),
-            }
-        )
-    else:
-        explorer = ToolCallingAgent(
-            **{
-                **base_kwargs,
-                "prompt_templates": build_prompt(AgentRole.EXPLORER, use_code_format=False),
-            }
-        )
-    apply_explorer_monkey_patches(explorer)
-    return explorer
+
+def make_explorer_agent(model: ThinkingModel, use_code_format: bool = False):
+    return make_agent(
+        role=AgentRole.EXPLORER,
+        model=model,
+        tools=EXPLORATION_TOOLS,
+        extra_kwargs={"name": "explorer", "description": "-"},
+        monkey_patch_func=apply_explorer_monkey_patches,
+        use_code_format=use_code_format
+    )

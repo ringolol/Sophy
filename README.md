@@ -1,62 +1,55 @@
 # Sophy - A Coding Agent Harness
 
-Sophy is an AI-powered coding agent built on top of the smolagents library. It implements a tool-call loop where an agent solves tasks passed by users through interactive CLI.
+Sophy is an AI-powered coding agent built on top of the `smolagents` library. It implements a robust tool-call loop where a primary **Solver** agent performs tasks by delegating discovery and navigation to a specialized **Explorer** sub-agent.
 
 ## Architecture
 
 ### Tech Stack:
-- Python 3.11
-- smolagents framework
-- Ollama models (local LLM, currently using qwen3.5:35b-a3b)
+- Python 3.11+
+- [smolagents](https://github.com/huggingface/smolagents) framework
+- Supports any LLM with an OpenAI-compatible API via `ThinkingModel`
 
 ### Core Components:
 
 1. **sophy.py** - Main entry point:
-   - Initializes a ToolCallingAgent with custom tools and model configuration
-   - Runs an interactive loop where users input tasks
-   - Supports session management commands (/quit, /new, /resume)
-   - Auto-saves sessions after each agent interaction
+   - Manages the interactive CLI loop using `prompt_toolkit`.
+   - Coordinates the dual-agent setup (Solver + Explorer).
+   - Handles high-level session commands (`/quit`, `/new`, `/resume`, `/model`, `/compress`).
 
-2. **tools.py** - Agent's tool definitions:
-   - File operations: read_file, write_new_file, edit_file, insert_text, delete_file, move_file
-   - Search operations: search_files, search_content
-   - System commands: run_command, execute_python
-   - Navigation: list_directory, get_tree
-   - Web: web_search, visit_webpage
-   - Communication: ask_user, get_conversation_history
-   - Completion signal: final_answer
+2. **factory.py** - Agent & Model Assembly:
+   - The "glue" module that constructs agents with specific roles.
+   - **Solver Agent:** Equipped with the full `TOOLS` suite; manages the Explorer as a tool.
+   - **Explorer Agent:** A restricted agent using only `EXPLORATION_TOOLS` to safely navigate and search the codebase.
 
-3. **session.py** - Session manager:
-   - Tracks conversation sessions stored in .sophy/sessions/
-   - Each session contains task/result pairs with steps and tools used
-   - Provides session persistence and summary generation
-   - Allows switching between saved sessions
+3. **tools.py** - Agent Capabilities:
+   - **`TOOLS`**: Full suite including `edit_file`, `write_new_file`, `run_command`, `execute_python`, and `web_search`.
+   - **`EXPLORATION_TOOLS`**: Read-only subset (`list_directory`, `search_content`, `read_file`, `get_tree`) for the Explorer.
+   - Includes safety features like the `@confirm` decorator for destructive actions.
 
-4. **model.py** - Custom model wrapper:
-   - Extends OpenAIServerModel for local Ollama integration
-   - Handles reasoning content display in panels
-   - Streams responses with token usage tracking
+4. **model.py** - `ThinkingModel` Wrapper:
+   - Custom interface for LLMs that supports "thinking" steps (reasoning).
+   - Handles context window management and role conversions for different API providers.
 
-5. **monkey_patches.py** - Behavioral customizations:
-   - Custom logger with colored panels
-   - Noise reduction (hides observation logs, tool call JSON)
-   - Enhanced tool execution with parallel processing
+5. **session.py** & **context_compression.py** - Persistence & Memory:
+   - **session.py**: Tracks conversation history, tool steps, and metadata in `.sophy/sessions/`.
+   - **context_compression.py**: Provides logic to summarize or truncate history to fit within model context limits.
 
-6. **prompts.py** - System prompt configuration:
-   - Direct prompt template enforcing tool-call-only responses
-   - Mandatory JSON format rule
-   - Reads CLAUDE.md for project context injection
+6. **prompts.py** & **prompts_data/**:
+   - Defines specialized system prompts for different agent roles.
+   - Enforces the "No Prose" rule and strict JSON tool-call formats.
 
-7. **utils.py** - Utilities:
-   - confirm decorator requiring user approval before dangerous operations
-   - Preview diffs before file modifications
-   - Step counting and final answer reminders
-   - Supported model configuration
+7. **monkey_patches.py**:
+   - Customizes `smolagents` behavior, including enhanced logging, noise reduction in outputs, and specialized step handling.
+
+8. **utils.py**:
+   - Shared utilities for configuration loading, CLI formatting (via `rich`), and user confirmation prompts.
 
 ## Key Design Principles
 
-- Strict JSON tool-calls only - Agent cannot output prose
-- User confirmation - Critical operations require explicit approval
-- Session persistence - All interactions are saved for later resumption
-- Local-first - Uses local Ollama models via local API
-- Interactive CLI - Rich console output with colored panels and diffs
+- **Dual-Agent Strategy**: Separates environment discovery (Explorer) from execution (Solver) to increase reliability.
+- **Flexible Tool-Calling**: Supports both native JSON tool-calls and code-tag formats (using `CodeAgent`), depending on the model's capabilities.
+- **No Prose Policy**: Agents communicate exclusively through valid tool-call blobs; no conversational prose.
+- **Human-in-the-Loop**: Critical operations (file edits, shell commands) require explicit user approval.
+- **Session Persistence**: Complete history of tasks and tool executions is saved for later resumption.
+- **Context Awareness**: Automatic context compression helps handle long-running debugging or development sessions.
+
