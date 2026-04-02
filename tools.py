@@ -178,6 +178,9 @@ def insert_text(file_path: str, line_number: int, content: str) -> str:
         f.writelines(lines)
     return f"Inserted text at line {insert_at + 1} in {file_path}"
 
+from prompt_toolkit import prompt
+from prompt_toolkit.key_binding import KeyBindings
+
 @tool
 def ask_user(question: str) -> str:
     """Do not hesitate to use it for clarification, confirmation, or additional information from User!
@@ -185,7 +188,17 @@ def ask_user(question: str) -> str:
     Args:
         question: a question to ask
     """
-    return input(f"{question}\n❯ ").strip()
+    bindings = KeyBindings()
+
+    @bindings.add('enter')
+    def _(event):
+        event.current_buffer.validate_and_handle()
+
+    @bindings.add('escape', 'enter')
+    def _(event):
+        event.current_buffer.newline()
+
+    return prompt(f"{question}\n❯ ", multiline=True, key_bindings=bindings).strip()
 
 @tool
 @path_expand
