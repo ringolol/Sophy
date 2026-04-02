@@ -6,7 +6,7 @@ This module contains all monkey patches that customize the behavior of the smola
 import re
 from smolagents.monitoring import YELLOW_HEX as SMOL_AGENTS_YELLOW
 from smolagents.monitoring import AgentLogger, escape_code_brackets
-from smolagents.agents import ToolCallingAgent, ToolCall, ToolOutput, AgentImage, AgentAudio, LogLevel
+from smolagents.agents import ToolCall, ToolOutput, AgentImage, AgentAudio, LogLevel
 from smolagents.models import ChatMessage
 from rich.panel import Panel
 from rich.text import Text

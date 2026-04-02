@@ -1,5 +1,6 @@
 from utils import ModelPreset, load_config, console, MAX_AGENT_STEPS
-from smolagents import ToolCallingAgent, LogLevel, CodeAgent
+from smolagents import LogLevel
+from patched_agents import CustomToolCallingAgent, CustomCodeAgent
 from prompts import build_prompt, AgentRole
 from tools import TOOLS, EXPLORATION_TOOLS
 from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
@@ -55,7 +56,7 @@ def make_agent(
     if extra_kwargs:
         base_kwargs.update(extra_kwargs)
 
-    agent_class = CodeAgent if use_code_format else ToolCallingAgent
+    agent_class = CustomCodeAgent if use_code_format else CustomToolCallingAgent
     agent = agent_class(
         **base_kwargs,
         prompt_templates=build_prompt(role, use_code_format=use_code_format),

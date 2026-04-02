@@ -4,10 +4,10 @@ import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 
-from smolagents import ToolCallingAgent, Panel
+from smolagents import MultiStepAgent, Panel
 from smolagents.memory import TaskStep, ActionStep, ToolCall
 from smolagents.monitoring import Timing, TokenUsage
-from rich.table import Table
+import questionary
 
 from utils import console
 
@@ -112,13 +112,13 @@ def list_sessions() -> list[dict]:
                 "id": data["id"],
                 "created_at": data["created_at"],
                 "entry_count": len(data.get("entries", [])),
-                "preview": first_task[:50],
+                "preview": first_task[:100].rstrip('.') + '...',
                 "path": path,
             })
         except (json.JSONDecodeError, KeyError):
             continue
     sessions.sort(key=lambda s: s["created_at"], reverse=True)
-    return sessions[:15]
+    return sessions
 
 
 def load_session(agent, s: Session):
@@ -134,29 +134,37 @@ def load_session(agent, s: Session):
 
 
 def pick_session() -> Session:
+
     saved = list_sessions()
-    table = Table(title="Sessions", show_header=True, header_style="bold cyan", show_edge=False)
-    table.add_column("#", style="bold")
-    table.add_column("ID")
-    table.add_column("Date")
-    table.add_column("Entries", justify="right")
-    table.add_column("Preview")
-    table.add_row("0", "[green]New session[/green]", "", "", "")
-    for i, s in enumerate(saved, 1):
-        table.add_row(str(i), s['id'], s['created_at'][:10], str(s['entry_count']), s['preview'])
-    console.print(table)
-    choice = input("Choose session [0]: ").strip()
-    print("\033[A\033[2K", end="", flush=True)
-    if not choice or choice == "0":
+
+    choices = [
+        questionary.Choice(title="[New Session]", value="NEW_SESSION")
+    ] + [
+        questionary.Choice(title=f"{s['id']} - {s['preview']}", value=s)
+        for s in saved
+    ]
+
+    from questionary import Style
+    style = Style([
+        ('highlighted', 'fg:cyan'),
+    ])
+
+    selected = questionary.select(
+        "Choose a session:",
+        choices=choices,
+        use_indicator=True,
+        style=style,
+    ).ask()
+
+    # questionary returns None on Ctrl+C or Esc
+    if selected is None:
+        console.print("[dim]Aborted.[/dim]")
+        exit()
+
+    if selected == "NEW_SESSION":
         return Session()
-    try:
-        idx = int(choice)
-        if 1 <= idx <= len(saved):
-            return Session.load(saved[idx - 1]["path"])
-    except ValueError:
-        pass
-    console.print("[red]Invalid choice, starting new session.[/red]")
-    return Session()
+
+    return Session.load(selected["path"])
 
 
 def _step_from_dict(d: dict) -> TaskStep | ActionStep:
@@ -193,7 +201,7 @@ def _step_from_dict(d: dict) -> TaskStep | ActionStep:
     )
 
 
-def restore_memory(agent: ToolCallingAgent, session: "Session"):
+def restore_memory(agent: MultiStepAgent, session: "Session"):
     """Restore agent memory from a loaded session."""
     agent.memory.reset()
     for entry in session.entries:

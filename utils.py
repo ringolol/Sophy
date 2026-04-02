@@ -4,13 +4,13 @@ import os
 import difflib
 import functools
 from dataclasses import dataclass
-
 import requests
-from smolagents.memory import ActionStep
 
+from smolagents.memory import ActionStep
 from rich.console import Console
 from rich.syntax import Syntax
 from rich.panel import Panel
+import questionary
 
 
 MAX_AGENT_STEPS = 30
@@ -74,32 +74,30 @@ def load_config() -> list[ModelPreset]:
     ]
 
 
-def pick_model(models: list[ModelPreset], current_model_id: str | None = None) -> ModelPreset:
-    from rich.table import Table
-    table = Table(title="Models", show_header=True, header_style="bold cyan", show_edge=False)
-    table.add_column("#", style="bold")
-    table.add_column("Model")
-    table.add_column("API")
-    for i, p in enumerate(models):
-        if "google" in p.api_base:
-            api_label = "[cyan]Gemini[/cyan]"
-        elif "yandex" in p.api_base:
-            api_label = "[red]Yandex[/red]"
-        else:
-            api_label = "[yellow]Ollama[/yellow]"
-        marker = " [green](current)[/green]" if p.model_id == current_model_id else ""
-        table.add_row(str(i), p.label + marker, api_label)
-    console.print(table)
-    choice = input("Choose model [0]: ").strip()
-    print("\033[A\033[2K", end="", flush=True)
-    try:
-        idx = int(choice) if choice else 0
-        if 0 <= idx < len(models):
-            return models[idx]
-    except ValueError:
-        pass
-    console.print("[red]Invalid choice, keeping current model.[/red]")
-    return next((p for p in models if p.model_id == current_model_id), models[0])
+def pick_model(models: list[ModelPreset]) -> ModelPreset:
+    def provider(api_base: str):
+        if "google" in api_base:
+            return "Google"
+        if "yandex" in api_base:
+            return "Yandex"
+        return "Ollama"
+
+    choices = [
+        questionary.Choice(title=p.label, value=p, description=f"\n    Provider: {provider(p.api_base)}\n    Tools: {p.tools}")
+        for p in models
+    ]
+
+    choice = questionary.select(
+        "Choose a model:",
+        choices=choices,
+        use_indicator=True,
+        show_description=True,
+    ).ask()
+
+    if choice:
+        return choice
+
+    exit()
 
 
 class ToolDeniedException(BaseException):
@@ -229,9 +227,7 @@ def remind_final_answer(step):
 def print_debug(*args, **kwargs):
     if not os.environ.get("DEBUG", ""):
         return
-    print("=== DEBUG ===")
-    print(*args, **kwargs)
-    print("=============")
+    console.print(*args, **kwargs)
 
 
 def parse_arguments():

@@ -6,7 +6,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
 from smolagents.memory import ActionStep
 
-from utils import ToolDeniedException, ModelPreset, pick_model, console, parse_arguments
+from utils import ToolDeniedException, ModelPreset, pick_model, console, parse_arguments, print_debug
 from context_compression import maybe_compress, compress
 from tools import set_history_provider
 from session import Session, load_session, pick_session
@@ -39,13 +39,12 @@ def agent_loop():
         nonlocal solver_preset, solver_agent, explorer_agent, explorer_model
         solver_preset = preset
         new_model = make_model(preset)
-        
-        # update explorer_agent if needed? For now keep it consistent
+
         solver_agent = make_solver_agent(preset, new_model, explorer_agent)
         load_session(solver_agent, session_holder[0])
         console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
 
-    console.print(f'[dim]{solver_agent.system_prompt}[/dim]')
+    print_debug(f'[dim]{solver_agent.system_prompt}[/dim]')
     session_holder[0] = pick_session()
     console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
     console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
@@ -61,7 +60,7 @@ def agent_loop():
     @bindings.add('escape', 'enter')
     def _(event):
         event.current_buffer.newline()
-    
+
     commands = ['/quit', '/new', '/compress', '/resume', '/model']
     completer = WordCompleter(commands, ignore_case=True, sentence=True)
 
@@ -70,9 +69,9 @@ def agent_loop():
         session = session_holder[0]
         try:
             task = prompt(
-                "❯ ", 
-                multiline=True, 
-                key_bindings=bindings, 
+                "❯ ",
+                multiline=True,
+                key_bindings=bindings,
                 completer=completer,
                 complete_while_typing=True
             ).strip()
@@ -106,8 +105,7 @@ def agent_loop():
             load_session(solver_agent, session_holder[0])
             continue
         if task == "/model":
-            preset = pick_model(available_presets, solver_preset.model_id)
-            switch_model(preset)
+            switch_model(pick_model(available_presets))
             continue
 
         try:
