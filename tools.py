@@ -319,11 +319,21 @@ def execute_python(code: str) -> str:
         code: Python code or expression to evaluate.
     """
     try:
-        result = PythonInterpreterTool().forward(code)
+        result = PythonInterpreterTool(timeout_seconds=5*60).forward(code)
         return result
     except InterpreterError:
         # Fallback to safe Python interpreter
         return dangerous_python_interpreter(code)
+
+
+@tool
+def explorer(task: str) -> str:
+    """Use this for ANY task that involves reading, searching, or navigating files! Unless you already know the exact file path AND only need one file.
+
+    Args:
+        task: A detailed description of the exploration task.
+    """
+    return ""
 
 
 web_search = DuckDuckGoSearchTool()
@@ -360,4 +370,8 @@ TOOLS = [
     web_search,
     visit_webpage,
     final_answer,
+]
+
+SUB_AGENTS = [
+    explorer,
 ]

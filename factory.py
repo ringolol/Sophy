@@ -1,6 +1,6 @@
 from utils import ModelPreset, load_config, console, MAX_AGENT_STEPS
 from smolagents import ToolCallingAgent, LogLevel, CodeAgent
-from prompts import direct_solver_prompt, direct_code_solver_prompt, explorer_prompt
+from prompts import build_solver_prompt, explorer_prompt
 from tools import TOOLS, EXPLORATION_TOOLS
 from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
 from model import ThinkingModel
@@ -50,14 +50,14 @@ def make_main_agent(preset: ModelPreset, model: ThinkingModel, explorer_agent):
         agent = ToolCallingAgent(
             **{
                 **base_kwargs,
-                "prompt_templates": direct_solver_prompt
+                "prompt_templates": build_solver_prompt(use_code_format=False),
             }
         )
     else:
         agent = CodeAgent(
             **{
                 **base_kwargs,
-                "prompt_templates": direct_code_solver_prompt,
+                "prompt_templates": build_solver_prompt(use_code_format=True),
             }
         )
     apply_monkey_patches(agent)

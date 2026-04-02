@@ -38,28 +38,28 @@ final_answer("The server runs on port 8080.")
 Tools are Python functions you can call directly in your code.
 
 <code>
-## Exploration
+# Exploration
 {exploration_description}
 
-## Search
+# Search
 {search_description}
 
-## Navigation
+# Navigation
 {navigation_description}
 
-## File Operations
+# File Operations
 {file_ops_description}
 
-## System
+# System
 {system_description}
 
-## Web
+# Web
 {web_description}
 
-## Communication
+# Communication
 {communication_description}
 
-## Completion
+# Completion
 {completion_description}
 </code>
 

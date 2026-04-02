@@ -182,8 +182,8 @@ def fix_malformed_code_tags():
 
     def _patched_parse(text, code_block_tags):
         result = _original_parse(text, code_block_tags)
-        #if result:
-        #    result = re.sub(r'</?code(?!>)', '', result)
+        if result:
+            result = re.sub(r'</?code(?!>)', '', result)
         return result
 
     smol_utils.parse_code_blobs = _patched_parse
