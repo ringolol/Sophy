@@ -1,6 +1,7 @@
 import subprocess
 import os
 import glob as glob_module
+import warnings
 
 from smolagents import tool
 from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
@@ -10,6 +11,9 @@ from utils import confirm, path_expand
 
 
 _history_provider = None
+
+# supress tools' warnings
+warnings.filterwarnings("ignore")
 
 
 def set_history_provider(fn):
@@ -113,10 +117,10 @@ def run_command(command: str) -> str:
         command: The shell command to execute.
     """
     result = subprocess.run(
-        command, 
-        shell=True, 
-        capture_output=True, 
-        text=True, 
+        command,
+        shell=True,
+        capture_output=True,
+        text=True,
         encoding="utf-8",
         errors="replace",
         timeout=30
@@ -177,7 +181,7 @@ def insert_text(file_path: str, line_number: int, content: str) -> str:
 @tool
 def ask_user(question: str) -> str:
     """Do not hesitate to use it for clarification, confirmation, or additional information from User!
-    
+
     Args:
         question: a question to ask
     """
@@ -193,7 +197,7 @@ def list_directory(path: str = ".") -> str:
     try:
         entries = os.listdir(path)
         output = f"DirectoryContents(path='{path}'):\n"
-        
+
         for entry in sorted(entries):
             full_path = os.path.join(path, entry)
             if os.path.isfile(full_path):
@@ -203,7 +207,7 @@ def list_directory(path: str = ".") -> str:
                 output += f"  Dir:  {entry}/\n"
             else:
                 output += f"  ???  {entry}\n"
-        
+
         return output
     except FileNotFoundError:
         return f"Error: Directory '{path}' does not exist."
@@ -224,20 +228,20 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
     def _build_tree(root, current_depth=0, prefix=''):
         if current_depth > max_depth:
             return prefix + '. . . (max depth reached)\n'
-        
+
         try:
             entries = sorted(os.listdir(root))
         except (PermissionError, OSError) as e:
             return prefix + f'Error: {str(e)}\n'
-        
+
         output = ''
         for i, entry in enumerate(entries):
             full_path = os.path.join(root, entry)
             is_last = (i == len(entries) - 1)
             is_dir = os.path.isdir(full_path)
-            
+
             connector = '└── ' if is_last else '├── '
-            
+
             if is_dir:
                 output += prefix + connector + entry + '/\n'
                 if current_depth < max_depth:
@@ -245,9 +249,9 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
                     output += _build_tree(full_path, current_depth + 1, prefix + extension)
             else:
                 output += prefix + connector + entry + '\n'
-        
+
         return output
-    
+
     return _build_tree(path, 0, '')
 
 @tool
@@ -255,7 +259,7 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
 @path_expand
 def delete_file(file_path: str) -> str:
     """Deletes a file.
-    
+
     Args:
         file_path: The path to the file to delete.
     """
@@ -274,7 +278,7 @@ def delete_file(file_path: str) -> str:
 @path_expand
 def move_file(source: str, destination: str) -> str:
     """Moves a file or a directory.
-    
+
     Args:
         source: The source file/directory path.
         destination: The destination file/directory path.
@@ -310,7 +314,7 @@ def dangerous_python_interpreter(code: str) -> str:
 @tool
 def execute_python(code: str) -> str:
     """Execute Python code.
-    
+
     Args:
         code: Python code or expression to evaluate.
     """

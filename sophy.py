@@ -1,29 +1,21 @@
 #!/usr/bin/env python3
 
-import argparse
 import traceback
 
-from smolagents import ToolCallingAgent, LogLevel, CodeAgent
 from smolagents.memory import ActionStep
 
-from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
-from utils import ToolDeniedException, ModelPreset, load_config, pick_model, console, remind_final_answer, MAX_AGENT_STEPS
+from utils import ToolDeniedException, ModelPreset, pick_model, console, parse_arguments
 from context_compression import maybe_compress, compress
-from model import ThinkingModel
-from tools import TOOLS, EXPLORATION_TOOLS, set_history_provider
+from tools import set_history_provider
 from session import Session, load_session, pick_session
-from prompts import direct_solver_prompt, direct_code_solver_prompt, explorer_prompt
-from factory import parse_arguments, get_model_presets, make_model, make_main_agent, make_explorer_agent
-from smolagents import ToolCallingAgent, LogLevel, CodeAgent
+from factory import get_model_presets, make_model, make_main_agent, make_explorer_agent
 
-# session
+
 session_holder = [Session()]
 set_history_provider(session_holder[0].get_summary)
 
-# arguments
 args = parse_arguments()
 
-# models
 _available_presets = get_model_presets(args)
 
 if len(_available_presets) == 1:
@@ -44,6 +36,7 @@ def switch_model(preset: ModelPreset):
     main_agent = make_main_agent(preset, new_model, explorer)
     console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
 
+# models
 explorer_model = make_model(_explorer_preset)
 main_model = make_model(_active_preset)
 

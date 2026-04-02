@@ -1,4 +1,3 @@
-import argparse
 from utils import ModelPreset, load_config, console, MAX_AGENT_STEPS
 from smolagents import ToolCallingAgent, LogLevel, CodeAgent
 from prompts import direct_solver_prompt, direct_code_solver_prompt, explorer_prompt
@@ -7,12 +6,6 @@ from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
 from model import ThinkingModel
 from utils import remind_final_answer
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description="Sophy coding agent harness")
-    parser.add_argument("--api_base", type=str, default=None, help="API base URL for the model")
-    parser.add_argument("--api_key", type=str, default=None, help="API key for the model")
-    parser.add_argument("--model", type=str, default=None, help="Model ID to use")
-    return parser.parse_args()
 
 def get_model_presets(args):
     _all_presets = load_config()

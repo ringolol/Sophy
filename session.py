@@ -118,7 +118,7 @@ def list_sessions() -> list[dict]:
         except (json.JSONDecodeError, KeyError):
             continue
     sessions.sort(key=lambda s: s["created_at"], reverse=True)
-    return sessions
+    return sessions[:15]
 
 
 def load_session(agent, s: Session):
