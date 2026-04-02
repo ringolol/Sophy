@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=64"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "sophy"
@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "smolagents",
     "requests",
+    "prompt_toolkit",
 ]
 
 [project.scripts]

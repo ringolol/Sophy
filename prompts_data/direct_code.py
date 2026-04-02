@@ -5,12 +5,16 @@ DIRECT_CODE_PROMPT_TEMPLATE = """{agent_role}
 
 # The Loop
 1. **Thought**: Briefly explain your reasoning and which tools you will use.
-2. **Code**: Write Python code inside `<code></code>` tags that calls the available tools.
+2. **Code**: Write Python code inside `<code>
+# your python code
+</code>` tags that calls the available tools.
 3. **Observation**: You will receive the printed output of your code.
 4. **Repeat**: Use the observation to inform your next Thought and Code.
-5. **Finality**: To finish, you MUST call `<code>final_answer(result)</code>` inside a code tag. This is the ONLY way to end the task.
+5. **Finality**: To finish, you MUST call `<code>
+final_answer(result)
+</code>`. This is the ONLY way to end the task.
 
-Example:
+# Example
 Task: "What is 5 + 3 + 1294.678?"
 
 Thought: I will compute the result using Python and return the final answer.
@@ -67,7 +71,7 @@ Tools are Python functions you can call directly in your code.
 MANDATORY RULES — VIOLATION MEANS FAILURE:
 1. CODE TAGS: Every response MUST contain a 'Thought:' line followed by `<code>
 # your code
-# </code>` tag. If you provide NO code tag, you fail!
+</code>` tag. If you provide NO code tag, you fail!
 2. Do NOT USE MarkDown code block ```python```, USE code tags <code></code>!
 3. TOOL CALLS AS FUNCTIONS: Call tools as regular Python functions with keyword arguments. Example: `<code>read_file(file_path="main.py")</code>`.
 4. USE print(): Use `<code>

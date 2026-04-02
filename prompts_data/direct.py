@@ -9,10 +9,10 @@ DIRECT_PROMPT_TEMPLATE = """{agent_role}
 3. **Repeat**: Use the observation to inform your next Action.
 4. **Finality**: To finish, you MUST call the `final_answer` tool. This is the ONLY way to end the task.
 
-Action format:
+# Action format
 {{"name": "tool_name", "arguments": {{"arg": "value"}}}}
 
-Example:
+# Example
 Task: "What is 5 + 3 + 1294.678?"
 
 Action:

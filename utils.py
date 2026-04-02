@@ -184,7 +184,7 @@ def confirm(fn):
             if old_lines is not None:
                 if not _print_diff(old_lines, new_lines, path):
                     def dummy(*args, **kwargs):
-                        return "(no changes)"
+                        return "File have NOT been changed!"
                     return dummy
             else:
                 console.print(f"[green](new file: {path})[/green]")

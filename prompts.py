@@ -1,11 +1,17 @@
+from enum import Enum
 from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates
 
 from tools import TOOLS, EXPLORATION_TOOLS, SUB_AGENTS
 from prompts_data import (
     DIRECT_PROMPT_TEMPLATE, ROLE_TASK_SOLVER,
     DIRECT_CODE_PROMPT_TEMPLATE, ROLE_CODE_TASK_SOLVER,
-    EXPLORER_PROMPT_TEMPLATE, ROLE_EXPLORER, EXPLORER_TOOL_DESCRIPTION,
+    ROLE_EXPLORER, EXPLORER_PROMPT_TEMPLATE, ROLE_CODE_EXPLORER, EXPLORER_CODE_PROMPT_TEMPLATE
 )
+
+
+class AgentRole(Enum):
+    SOLVER = "solver"
+    EXPLORER = "explorer"
 
 
 def format_tool_as_json(tool) -> str:
@@ -34,9 +40,10 @@ def format_tool_as_function(tool) -> str:
 
 def build_system_prompt(
     tools: list,
-    project_description: str,
-    agent_role: str = ROLE_TASK_SOLVER,
-    use_code_format: bool = False
+    template: str,
+    agent_role: str,
+    use_code_format: bool,
+    project_description: str = "",
 ) -> str:
     """Build the system prompt with tool descriptions generated from the tool objects."""
 
@@ -58,7 +65,6 @@ def build_system_prompt(
         formatter = format_tool_as_function if use_code_format else format_tool_as_json
         return "\n".join(formatter(tool_by_name[n]) for n in names if n in tool_by_name) or "(none)"
 
-    template = DIRECT_CODE_PROMPT_TEMPLATE if use_code_format else DIRECT_PROMPT_TEMPLATE
 
     return template.format(
         agent_role=agent_role,
@@ -85,42 +91,44 @@ def get_project_description() -> str:
     return project_description
 
 
-def build_solver_prompt(
+def build_prompt(
+    role: AgentRole,
     use_code_format: bool = False
 ) -> PromptTemplates:
-    agent_role = ROLE_CODE_TASK_SOLVER if use_code_format else ROLE_TASK_SOLVER
-    return PromptTemplates(
-        system_prompt=build_system_prompt(TOOLS + SUB_AGENTS, get_project_description(), agent_role=agent_role, use_code_format=use_code_format),
-        planning=PlanningPromptTemplate(
-            initial_plan="",
-            update_plan_pre_messages="",
-            update_plan_post_messages="",
-        ),
-        managed_agent=ManagedAgentPromptTemplate(task="", report=""),
-        final_answer=FinalAnswerPromptTemplate(pre_messages="", post_messages=""),
-    )
+    """Build the system prompt and templates based on the agent role."""
 
-
-def build_explorer_prompt(
-    use_code_format: bool = False
-) -> PromptTemplates:
-    """Build the explorer sub-agent's PromptTemplates."""
-    return PromptTemplates(
-        system_prompt=build_system_prompt(
-            tools=EXPLORATION_TOOLS,
-            project_description="",
-            agent_role=ROLE_EXPLORER,
-            use_code_format=use_code_format
-        ),
-        planning=PlanningPromptTemplate(
-            initial_plan="",
-            update_plan_pre_messages="",
-            update_plan_post_messages="",
-        ),
-        managed_agent=ManagedAgentPromptTemplate(
+    if role == AgentRole.SOLVER:
+        template = DIRECT_CODE_PROMPT_TEMPLATE if use_code_format else DIRECT_PROMPT_TEMPLATE
+        agent_role = ROLE_CODE_TASK_SOLVER if use_code_format else ROLE_TASK_SOLVER
+        tools = TOOLS + SUB_AGENTS
+        managed_agent = ManagedAgentPromptTemplate(task="", report="")
+    elif role == AgentRole.EXPLORER:
+        template = EXPLORER_CODE_PROMPT_TEMPLATE if use_code_format else EXPLORER_PROMPT_TEMPLATE
+        agent_role = ROLE_CODE_EXPLORER if use_code_format else ROLE_EXPLORER
+        tools = EXPLORATION_TOOLS
+        managed_agent = ManagedAgentPromptTemplate(
             task="Your exploration task:\n{{task}}\n\n",
             report="{{final_answer}}",
+        )
+    else:
+        raise ValueError(f"Unknown agent role: {role}")
+
+    system_prompt = build_system_prompt(
+        tools=tools,
+        project_description="",
+        agent_role=agent_role,
+        use_code_format=use_code_format,
+        template=template,
+    )
+
+    return PromptTemplates(
+        system_prompt=system_prompt,
+        planning=PlanningPromptTemplate(
+            initial_plan="",
+            update_plan_pre_messages="",
+            update_plan_post_messages="",
         ),
+        managed_agent=managed_agent,
         final_answer=FinalAnswerPromptTemplate(pre_messages="", post_messages=""),
     )
 
