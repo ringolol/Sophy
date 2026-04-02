@@ -2,7 +2,8 @@ from smolagents.memory import ActionStep, TaskStep
 from smolagents.models import ChatMessage, MessageRole
 
 from session import Session
-from utils import console, ModelPreset
+from ui import console
+from config import ModelPreset
 
 
 SUMMARIZATION_PROMPT = (

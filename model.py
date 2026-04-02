@@ -2,7 +2,7 @@ from smolagents import OpenAIServerModel
 from rich.console import Console
 from rich.panel import Panel
 
-from utils import print_debug
+from ui import print_debug
 
 console = Console()
 

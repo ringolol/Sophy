@@ -16,3 +16,10 @@ dependencies = [
 
 [project.scripts]
 sophy = "sophy:main"
+
+[tool.mypy]
+# optional: other settings
+
+[[tool.mypy.overrides]]
+module = "smolagents.*"
+ignore_missing_imports = true

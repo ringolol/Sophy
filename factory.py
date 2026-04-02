@@ -1,11 +1,14 @@
-from utils import ModelPreset, load_config, console, MAX_AGENT_STEPS
+import typing
+
+from config import ModelPreset, load_config
+from ui import console
+from utils import MAX_AGENT_STEPS, remind_final_answer
 from smolagents import LogLevel
 from patched_agents import CustomToolCallingAgent, CustomCodeAgent
 from prompts import build_prompt, AgentRole
 from tools import TOOLS, EXPLORATION_TOOLS
 from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
 from model import ThinkingModel
-from utils import remind_final_answer
 
 
 def get_model_presets(args):
@@ -40,11 +43,11 @@ def make_agent(
     role: AgentRole,
     model: ThinkingModel,
     tools: list,
-    extra_kwargs: dict = None,
+    extra_kwargs: typing.Optional[dict] = None,
     monkey_patch_func=None,
     use_code_format: bool = False
 ):
-    base_kwargs = dict(
+    base_kwargs: dict = dict(
         tools=tools,
         add_base_tools=False,
         model=model,

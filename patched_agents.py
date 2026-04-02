@@ -1,4 +1,10 @@
-from smolagents.agents import *
+import PIL.Image
+from smolagents.agents import ToolCallingAgent, CodeAgent, ActionStep, PlanningStep, FinalAnswerStep, ChatMessageStreamDelta, AgentError, AgentGenerationError, ActionOutput, Timing, handle_agent_output_types
+from typing import Generator
+import time
+from rich.text import Text
+from smolagents import LogLevel
+from smolagents.monitoring import YELLOW_HEX
 
 
 class CustomToolCallingAgent(ToolCallingAgent):
