@@ -3,6 +3,7 @@
 import traceback
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.completion import WordCompleter
 from smolagents.memory import ActionStep
 
 from utils import ToolDeniedException, ModelPreset, pick_model, console, parse_arguments
@@ -31,13 +32,15 @@ def agent_loop():
     solver_model = make_model(solver_preset)
 
     # agents
-    explorer_agent = make_explorer_agent(explorer_model)
+    explorer_agent = make_explorer_agent(explorer_model, use_code_format=not explorer_preset.tools)
     solver_agent = make_solver_agent(solver_preset, solver_model, explorer_agent)
 
     def switch_model(preset: ModelPreset):
-        nonlocal solver_preset, solver_agent, explorer_agent
+        nonlocal solver_preset, solver_agent, explorer_agent, explorer_model
         solver_preset = preset
         new_model = make_model(preset)
+        
+        # update explorer_agent if needed? For now keep it consistent
         solver_agent = make_solver_agent(preset, new_model, explorer_agent)
         load_session(solver_agent, session_holder[0])
         console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
@@ -58,12 +61,21 @@ def agent_loop():
     @bindings.add('escape', 'enter')
     def _(event):
         event.current_buffer.newline()
+    
+    commands = ['/quit', '/new', '/compress', '/resume', '/model']
+    completer = WordCompleter(commands, ignore_case=True, sentence=True)
 
     task_prefix = ""
     while True:
         session = session_holder[0]
         try:
-            task = prompt("❯ ", multiline=True, key_bindings=bindings).strip()
+            task = prompt(
+                "❯ ", 
+                multiline=True, 
+                key_bindings=bindings, 
+                completer=completer,
+                complete_while_typing=True
+            ).strip()
         except KeyboardInterrupt:
             console.print("[dim]cya[/dim]")
             exit()

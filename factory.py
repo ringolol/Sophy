@@ -63,19 +63,31 @@ def make_solver_agent(preset: ModelPreset, model: ThinkingModel, explorer_agent)
     apply_monkey_patches(agent)
     return agent
 
-def make_explorer_agent(model: ThinkingModel):
-    explorer = ToolCallingAgent(
+def make_explorer_agent(model: ThinkingModel, use_code_format: bool = False):
+    base_kwargs = dict(
         tools=EXPLORATION_TOOLS,
         add_base_tools=False,
-        prompt_templates=build_prompt(AgentRole.EXPLORER),
         model=model,
         max_steps=MAX_AGENT_STEPS,
         verbosity_level=LogLevel.INFO,
         stream_outputs=True,
         name="explorer",
         description="-",
-        provide_run_summary=False,
         step_callbacks=[remind_final_answer],
     )
+    if use_code_format:
+        explorer = CodeAgent(
+            **{
+                **base_kwargs,
+                "prompt_templates": build_prompt(AgentRole.EXPLORER, use_code_format=True),
+            }
+        )
+    else:
+        explorer = ToolCallingAgent(
+            **{
+                **base_kwargs,
+                "prompt_templates": build_prompt(AgentRole.EXPLORER, use_code_format=False),
+            }
+        )
     apply_explorer_monkey_patches(explorer)
     return explorer
