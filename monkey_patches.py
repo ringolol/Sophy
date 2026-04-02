@@ -4,6 +4,7 @@ This module contains all monkey patches that customize the behavior of the smola
 """
 
 import re
+import smolagents.utils as smol_utils
 from smolagents.monitoring import YELLOW_HEX as SMOL_AGENTS_YELLOW
 from smolagents.monitoring import AgentLogger, escape_code_brackets
 from smolagents.agents import ToolCallingAgent, ToolCall, ToolOutput, AgentImage, AgentAudio, LogLevel
@@ -29,12 +30,12 @@ smol_monitoring.YELLOW_HEX = PANEL_COLORS["custom"]
 # Custom AgentLogger with per-panel color support
 class CustomAgentLogger(AgentLogger):
     """Enhanced logger with customizable task and observation colors."""
-    
-    def __init__(self, level: LogLevel = LogLevel.INFO, console=None, 
-                 task_color: str = PANEL_COLORS["task"], 
+
+    def __init__(self, level: LogLevel = LogLevel.INFO, console=None,
+                 task_color: str = PANEL_COLORS["task"],
                  observation_color: str = PANEL_COLORS["observation"]):
         """Initialize CustomAgentLogger with custom colors.
-        
+
         Args:
             level: Log level
             console: Rich Console instance
@@ -44,10 +45,10 @@ class CustomAgentLogger(AgentLogger):
         super().__init__(level, console)
         self.task_color = task_color
         self.observation_color = observation_color
-    
+
     def log_task(self, content: str, subtitle: str, title: str | None = None, level=LogLevel.INFO) -> None:
         """Log task with custom color for 'New run' panel.
-        
+
         Args:
             content: Task content to log
             subtitle: Subtitle for the panel
@@ -65,10 +66,10 @@ class CustomAgentLogger(AgentLogger):
             ),
             level=level,
         )
-    
+
     def log_observation(self, content: str, title: str | None = None, level=LogLevel.INFO) -> None:
         """Log observation with custom color.
-        
+
         Args:
             content: Observation content to log
             title: Optional title for the panel
@@ -88,14 +89,14 @@ class CustomAgentLogger(AgentLogger):
 # Apply custom logger to agent after creation
 def apply_custom_logger(agent, task_color: str = PANEL_COLORS["task"], observation_color: str = PANEL_COLORS["observation"]):
     """Apply custom logger with per-panel colors.
-    
+
     Args:
         agent: The agent instance to apply the logger to
         task_color: Custom color for task panel border
         observation_color: Custom color for observation panel border
     """
     agent.logger = CustomAgentLogger(
-        level=LogLevel.INFO, 
+        level=LogLevel.INFO,
         console=agent.logger.console,
         task_color=task_color,
         observation_color=observation_color
@@ -208,6 +209,25 @@ def apply_explorer_monkey_patches(agent):
     apply_custom_logger(agent, task_color=sub_agent_color, observation_color=PANEL_COLORS["observation"])
     hide_observation_logs(agent)
     agent.process_tool_calls = _make_patched_process_tool_calls(sub_agent_color).__get__(agent)
+
+
+def fix_malformed_code_tags():
+    """Patch parse_code_blobs to strip malformed </code (missing >) from extracted code."""
+    _original_parse = smol_utils.parse_code_blobs
+
+    def _patched_parse(text, code_block_tags):
+        result = _original_parse(text, code_block_tags)
+        if result:
+            result = re.sub(r'</?code>?\s*', '', result).rstrip()
+        return result
+
+    smol_utils.parse_code_blobs = _patched_parse
+    # Also patch the reference in agents module
+    import smolagents.agents as smol_agents
+    smol_agents.parse_code_blobs = _patched_parse
+
+
+fix_malformed_code_tags()
 
 
 def apply_monkey_patches(agent):

@@ -43,6 +43,7 @@ class ModelPreset:
     label: str
     tools: bool = True
     system_prompt: bool = True
+    explorer: bool = False
 
 
 def _resolve_env(value: str) -> str:
@@ -64,6 +65,7 @@ def load_config() -> list[ModelPreset]:
             label=m.get("label", m["model_id"]),
             tools=m.get("tools", True),
             system_prompt=m.get("system_prompt", True),
+            explorer=m.get("explorer", False),
         )
         for m in data.get("models", [])
     ]

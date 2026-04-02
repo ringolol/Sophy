@@ -20,7 +20,8 @@ class ThinkingModel(OpenAIServerModel):
         )
         self._apply_rate_limit()
         thinking = False
-        thinking_text = [] 
+        thinking_text = []
+        debug_chunks = []
         for event in self.retryer(
             self.client.chat.completions.create,
             **completion_kwargs,
@@ -55,6 +56,8 @@ class ThinkingModel(OpenAIServerModel):
                         ))
                         thinking_text.clear()  
                         
+                    if choice.delta.content:
+                        debug_chunks.append(choice.delta.content)
                     yield ChatMessageStreamDelta(
                         content=choice.delta.content,
                         tool_calls=[
@@ -67,3 +70,4 @@ class ThinkingModel(OpenAIServerModel):
                     )
                 elif not getattr(choice, "finish_reason", None):
                     raise ValueError(f"No content or tool calls in event: {event}")
+        print(f"[DEBUG RAW OUTPUT]\n{''.join(debug_chunks)}\n[/DEBUG]")
