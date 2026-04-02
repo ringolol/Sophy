@@ -39,6 +39,12 @@ if len(_available_presets) == 1:
 else:
     _active_preset = pick_model(_available_presets)
 
+explorer_presets = [p for p in _available_presets if p.explorer]
+if explorer_presets:
+    _explorer_preset = explorer_presets[0]
+else:
+    _explorer_preset = _active_preset
+
 
 def _make_model(preset: ModelPreset) -> ThinkingModel:
     kwargs = {}
@@ -57,30 +63,29 @@ def _make_model(preset: ModelPreset) -> ThinkingModel:
 
 
 def _make_main_agent(preset: ModelPreset, model: ThinkingModel):
+    base_kwargs = dict(
+        tools=TOOLS,
+        add_base_tools=False,
+        model=model,
+        max_steps=MAX_AGENT_STEPS,
+        verbosity_level=LogLevel.INFO,
+        stream_outputs=True,
+        managed_agents=[explorer],
+        step_callbacks=[remind_final_answer],
+    )
     if preset.tools:
         agent = ToolCallingAgent(
-            tools=TOOLS,
-            add_base_tools=False,
-            prompt_templates=direct_solver_prompt,
-            model=model,
-            max_steps=MAX_AGENT_STEPS,
-            verbosity_level=LogLevel.INFO,
-            stream_outputs=True,
-            managed_agents=[explorer],
-            step_callbacks=[remind_final_answer],
+            **{
+                **base_kwargs,
+                "prompt_templates": direct_solver_prompt
+            }
         )
     else:
         agent = CodeAgent(
-            tools=TOOLS,
-            add_base_tools=False,
-            prompt_templates=direct_code_solver_prompt,
-            model=model,
-            max_steps=MAX_AGENT_STEPS,
-            verbosity_level=LogLevel.INFO,
-            stream_outputs=True,
-            managed_agents=[explorer],
-            step_callbacks=[remind_final_answer],
-            code_block_tags="markdown",
+            **{
+                **base_kwargs,
+                "prompt_templates": direct_code_solver_prompt,
+            }
         )
     apply_monkey_patches(agent)
     return agent
@@ -90,18 +95,19 @@ def switch_model(preset: ModelPreset):
     global _active_preset, main_agent
     _active_preset = preset
     new_model = _make_model(preset)
-    explorer.model = new_model
     main_agent = _make_main_agent(preset, new_model)
     console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
 
 
-model = _make_model(_active_preset)
+# Create separate models for explorer and main agent
+explorer_model = _make_model(_explorer_preset)
+main_model = _make_model(_active_preset)
 
 explorer = ToolCallingAgent(
     tools=EXPLORATION_TOOLS,
     add_base_tools=False,
     prompt_templates=explorer_prompt,
-    model=model,
+    model=explorer_model,
     max_steps=MAX_AGENT_STEPS,
     verbosity_level=LogLevel.INFO,
     stream_outputs=True,
@@ -112,7 +118,7 @@ explorer = ToolCallingAgent(
 )
 apply_explorer_monkey_patches(explorer)
 
-main_agent = _make_main_agent(_active_preset, model)
+main_agent = _make_main_agent(_active_preset, main_model)
 
 def agent_loop():
     console.print(f'[dim]{main_agent.system_prompt}[/dim]')
