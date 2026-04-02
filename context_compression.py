@@ -2,7 +2,7 @@ from smolagents.memory import ActionStep, TaskStep
 from smolagents.models import ChatMessage, MessageRole
 
 from session import Session
-from utils import console, get_context_window
+from utils import console, ModelPreset
 
 
 SUMMARIZATION_PROMPT = (
@@ -94,12 +94,12 @@ def compress(agent, session_holder: list) -> None:
     console.print(f"[bold green]New session {new_session.id} created with compressed context.[/bold green]\n")
 
 
-def maybe_compress(agent, session_holder: list) -> None:
+def maybe_compress(agent, session_holder: list, model_preset: ModelPreset) -> None:
     input_tokens = _get_last_input_tokens(agent)
     if input_tokens is None:
         return
 
-    context_window = get_context_window(agent.model.model_id)
+    context_window = model_preset.context
     usage_ratio = input_tokens / context_window
     console.print(f"[dim]context: [yellow]{usage_ratio*100:.0f}%[/yellow] ({input_tokens}/{context_window})[/dim]")
     if usage_ratio < COMPRESSION_THRESHOLD:

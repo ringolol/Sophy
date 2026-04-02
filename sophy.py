@@ -89,7 +89,7 @@ def agent_loop():
             continue
 
         try:
-            maybe_compress(main_agent, session_holder)
+            maybe_compress(main_agent, session_holder, _active_preset)
             result = main_agent.run(task_prefix + task, reset=False)
             task_prefix = ""
             session = session_holder[0]

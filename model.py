@@ -1,6 +1,6 @@
 from smolagents import OpenAIServerModel
 from rich.console import Console
-from rich.panel import Panel 
+from rich.panel import Panel
 
 from utils import print_debug
 
@@ -8,6 +8,8 @@ console = Console()
 
 
 class ThinkingModel(OpenAIServerModel):
+    """ Custom model that handles 'thinking' reasoning content in the response stream and displays it in a separate panel. """
+
     def __init__(self, *args, context_window=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.context_window = context_window
@@ -57,13 +59,13 @@ class ThinkingModel(OpenAIServerModel):
                         console.print(Panel(
                             ''.join(thinking_text).strip(),
                             title="💭 Thinking",
-                            title_align="left", 
-                            border_style="dim",   
+                            title_align="left",
+                            border_style="dim",
                             style="gray70",
                             padding=(0, 1),
                         ))
-                        thinking_text.clear()  
-                        
+                        thinking_text.clear()
+
                     if choice.delta.content:
                         debug_chunks.append(choice.delta.content)
                     yield ChatMessageStreamDelta(
@@ -78,4 +80,4 @@ class ThinkingModel(OpenAIServerModel):
                     )
                 elif not getattr(choice, "finish_reason", None):
                     raise ValueError(f"No content or tool calls in event: {event}")
-        print_debug(f"[DEBUG RAW OUTPUT]\n{''.join(debug_chunks)}\n[/DEBUG]")
+        print_debug(f"\n{''.join(debug_chunks)}\n")

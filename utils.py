@@ -229,7 +229,9 @@ def remind_final_answer(step):
 def print_debug(*args, **kwargs):
     if not os.environ.get("DEBUG", ""):
         return
-    console.print(*args, **kwargs)
+    print("=== DEBUG ===")
+    print(*args, **kwargs)
+    print("=============")
 
 
 def parse_arguments():

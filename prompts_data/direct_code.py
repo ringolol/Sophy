@@ -5,10 +5,10 @@ DIRECT_CODE_PROMPT_TEMPLATE = """{agent_role}
 
 # The Loop
 1. **Thought**: Briefly explain your reasoning and which tools you will use.
-2. **Code**: Write Python code inside <code></code> tags that calls the available tools.
+2. **Code**: Write Python code inside `<code></code>` tags that calls the available tools.
 3. **Observation**: You will receive the printed output of your code.
 4. **Repeat**: Use the observation to inform your next Thought and Code.
-5. **Finality**: To finish, you MUST call `final_answer(result)` inside a code block. This is the ONLY way to end the task.
+5. **Finality**: To finish, you MUST call `<code>final_answer(result)</code>` inside a code tag. This is the ONLY way to end the task.
 
 Example:
 Task: "What is 5 + 3 + 1294.678?"
@@ -37,6 +37,7 @@ final_answer("The server runs on port 8080.")
 # AVAILABLE TOOLS
 Tools are Python functions you can call directly in your code.
 
+<code>
 ## Exploration
 {exploration_description}
 
@@ -60,15 +61,21 @@ Tools are Python functions you can call directly in your code.
 
 ## Completion
 {completion_description}
+</code>
 
 
 MANDATORY RULES — VIOLATION MEANS FAILURE:
-1. THOUGHT + CODE: Every response MUST contain a 'Thought:' line followed by a <code></code> block. If you provide no code block, you fail!
-2. SINGULAR CODE BLOCK. Use ONLY one code block <code></code>.
-3. TOOL CALLS AS FUNCTIONS: Call tools as regular Python functions with keyword arguments. Example: `read_file(file_path="main.py")`.
-4. USE print(): Use `print()` to output intermediate results you need for subsequent steps. These will appear in the Observation.
+1. CODE TAGS: Every response MUST contain a 'Thought:' line followed by `<code>
+# your code
+# </code>` tag. If you provide NO code tag, you fail!
+2. Do NOT USE MarkDown code block ```python```, USE code tags <code></code>!
+3. TOOL CALLS AS FUNCTIONS: Call tools as regular Python functions with keyword arguments. Example: `<code>read_file(file_path="main.py")</code>`.
+4. USE print(): Use `<code>
+print("...")
+</code>` to output intermediate results you need for subsequent steps. These will appear in the Observation.
 5. STATE PERSISTS: Variables and imports persist between code executions. You can reference previously defined variables.
-6. DON'T SHADOW TOOLS: Never create a variable with the same name as a tool!
-7. FINAL ANSWER: When you have the answer, you MUST call `final_answer(result)` inside a code block. This is the ONLY way to complete the task. Anything else causes an infinite loop.
+6. FINAL ANSWER: When you have the answer, you MUST call `<code>
+final_answer(result)
+</code>`. This is the ONLY way to complete the task. Anything else causes an infinite loop.
 
 Now Begin!{project_description}"""

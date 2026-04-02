@@ -111,7 +111,7 @@ project_description = ''
 try:
     with open('CLAUDE.md', 'r') as f:
         claud_md = f.read().strip()
-        project_description = f"\n\nCurrent Project:\n```\n{claud_md}\n```"
+        project_description = f"\n\nCurrent Project:\n{claud_md}\n"
 except FileNotFoundError:
     pass
 

@@ -4,9 +4,9 @@
 - ollama models
 
 ## Main Python Files
-- Main entry point: sophy.py 
-- Agent's tools: tools.py
-- prompts.py
+- Main entry point: sophy.py
+- Agents' tools: tools.py
+- Agents' prompts: prompts.py
 - Session manager: session.py
 - Customizations to smolagents: monkey_patches.py
 - Custom smolagents model: model.py
