@@ -7,8 +7,8 @@ from smolagents import LogLevel
 from patched_agents import CustomToolCallingAgent, CustomCodeAgent
 from prompts import build_prompt, AgentRole
 from tools import TOOLS, EXPLORATION_TOOLS
-from monkey_patches import apply_monkey_patches, apply_explorer_monkey_patches
-from model import ThinkingModel
+from smolagents_patches import apply_monkey_patches, apply_explorer_monkey_patches
+from patched_model import ThinkingModel
 
 
 def get_model_presets(args):

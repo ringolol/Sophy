@@ -14,9 +14,9 @@ from contextvars import copy_context
 
 
 PANEL_COLORS = {
-    "task": "#0DBC79",       # Color for task panel title
-    "observation": "#C0C0C0",# Color for observation panels
-    "custom": "#FFFFFF",     # Default custom color
+    "task": "#0DBC79",
+    "observation": "#C0C0C0",
+    "custom": "#FFFFFF",
     "tool": "#d4b702",
     "sub-agent": "#4A9ECC",
 }

@@ -42,12 +42,12 @@ def load_guard_config() -> GuardConfig:
     )
 
 
-def _resolve_env(value: str) -> str:
-    if value.startswith("$"):
-        return os.environ.get(value[1:], "")
-    return value
-
 def load_config() -> list[ModelPreset]:
+    def _resolve_env(value: str) -> str:
+        if value.startswith("$"):
+            return os.environ.get(value[1:], "")
+        return value
+
     if not os.path.isfile(CONFIG_PATH):
         return []
     with open(CONFIG_PATH) as f:
@@ -65,6 +65,7 @@ def load_config() -> list[ModelPreset]:
         )
         for m in data.get("models", [])
     ]
+
 
 def pick_model(models: list[ModelPreset]) -> ModelPreset:
     def provider(api_base: str):
