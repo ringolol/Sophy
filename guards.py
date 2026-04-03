@@ -10,7 +10,7 @@ from ui import console
 
 
 _guard_config = None
-_COMPOUND_CMD_RE = re.compile(r'(\|\||&&|;|\||&|`|\$\(|[<>])')
+_COMPOUND_CMD_RE = re.compile(r'(\|\||&&|;|\||&|`|\$\(|\$\{|[<>()\n])')
 _AUTO_EDIT_TOOLS = frozenset({"edit_file", "insert_text", "write_new_file"})
 
 

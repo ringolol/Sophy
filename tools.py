@@ -1,4 +1,5 @@
 import subprocess
+import shlex
 import os
 import glob as glob_module
 import warnings
@@ -117,8 +118,7 @@ def run_command(command: str) -> str:
         command: The shell command to execute.
     """
     result = subprocess.run(
-        command,
-        shell=True,
+        shlex.split(command),
         capture_output=True,
         text=True,
         encoding="utf-8",
