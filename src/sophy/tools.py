@@ -373,7 +373,6 @@ visit_webpage = VisitWebpageTool()
 patch_tool(visit_webpage, command_preview)
 visit_webpage.description = "Reads a URL as markdown."
 final_answer = FinalAnswerTool()
-patch_tool(final_answer, command_preview)
 patch_tool(final_answer, final_output)
 final_answer.description = "Returns your final answer."
 

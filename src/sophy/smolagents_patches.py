@@ -80,6 +80,10 @@ def hide_observation_logs(agent):
     def _filtered_log(*args, **kwargs):
         if args and isinstance(args[0], str) and args[0].startswith("Observations:"):
             return
+        if args and isinstance(args[0], Text):
+            text_str = args[0].plain
+            if text_str.startswith("Final answer:"):
+                return
         _original_log(*args, **kwargs)
     agent.logger.log = _filtered_log
 
@@ -113,13 +117,15 @@ def _make_patched_process_tool_calls(tool_color: str):
         def process_single_tool_call(tool_call: ToolCall) -> ToolOutput:
             tool_name = tool_call.name
             tool_arguments = tool_call.arguments or {}
-            self.logger.log(
-                Panel(
-                    Text(f"Calling tool: '{tool_name}' with arguments: {tool_arguments}"),
-                    border_style=tool_color,
-                ),
-                level=LogLevel.INFO,
-            )
+            # --- PATCH: Disable tool call panel print ---
+            # self.logger.log(
+            #     Panel(
+            #         Text(f"Calling tool: '{tool_name}' with arguments: {tool_arguments}"),
+            #         border_style=tool_color,
+            #     ),
+            #     level=LogLevel.INFO,
+            # )
+            # --------------------------------------------
             tool_call_result = self.execute_tool_call(tool_name, tool_arguments)
             tool_call_result_type = type(tool_call_result)
             if tool_call_result_type in [AgentImage, AgentAudio]:

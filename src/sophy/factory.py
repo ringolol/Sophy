@@ -39,6 +39,20 @@ def make_model(preset: ModelPreset) -> ThinkingModel:
         **kwargs,
     )
 
+def log_context_usage(step_log, agent):
+    # Try to get token usage from the latest step
+    if agent.memory.steps and hasattr(agent.memory.steps[-1], "token_usage") and agent.memory.steps[-1].token_usage:
+        input_tokens = agent.memory.steps[-1].token_usage.input_tokens
+        context_window = agent.model.context_window
+        if input_tokens and context_window:
+            usage_ratio = input_tokens / context_window
+            bar_length = 10
+            filled_length = int(bar_length * usage_ratio)
+            bar = "█" * filled_length + "░" * (bar_length - filled_length)
+            console.print(
+                f"[dim]Context usage: {bar} {usage_ratio:.0%}[/dim]"
+            )
+
 def make_agent(
     role: AgentRole,
     model: ThinkingModel,
@@ -52,9 +66,9 @@ def make_agent(
         add_base_tools=False,
         model=model,
         max_steps=MAX_AGENT_STEPS,
-        verbosity_level=LogLevel.INFO,
+        verbosity_level=LogLevel.ERROR,
         stream_outputs=True,
-        step_callbacks=[remind_final_answer],
+        step_callbacks=[remind_final_answer, log_context_usage],
     )
     if extra_kwargs:
         base_kwargs.update(extra_kwargs)
