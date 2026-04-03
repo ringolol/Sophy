@@ -9,6 +9,7 @@ from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool
 from smolagents.local_python_executor import InterpreterError
 
 from .guards import confirm, path_expand
+from .ui import command_preview, patch_tool
 
 
 _history_provider = None
@@ -24,6 +25,7 @@ def set_history_provider(fn):
 
 
 @tool
+@command_preview
 def get_conversation_history(last_n: int = 5) -> str:
     """Returns recent conversation history.
 
@@ -36,6 +38,7 @@ def get_conversation_history(last_n: int = 5) -> str:
 
 @tool
 @path_expand
+@command_preview
 def read_file(file_path: str) -> str:
     """Reads a file.
 
@@ -51,6 +54,7 @@ def read_file(file_path: str) -> str:
 @tool
 @confirm
 @path_expand
+@command_preview
 def write_new_file(file_path: str, content: str) -> str:
     """Writes a new file.
 
@@ -65,6 +69,7 @@ def write_new_file(file_path: str, content: str) -> str:
 
 @tool
 @path_expand
+@command_preview
 def search_files(pattern: str, directory: str = ".") -> str:
     """Glob search for files.
 
@@ -79,6 +84,7 @@ def search_files(pattern: str, directory: str = ".") -> str:
 
 @tool
 @path_expand
+@command_preview
 def search_content(text_pattern: str, directory: str = ".", file_pattern: str = "*") -> str:
     """Searches file contents for a text pattern (grep).
 
@@ -111,6 +117,7 @@ def search_content(text_pattern: str, directory: str = ".", file_pattern: str = 
 
 @tool
 @confirm
+@command_preview
 def run_command(command: str) -> str:
     """Runs a shell command.
 
@@ -137,6 +144,7 @@ def run_command(command: str) -> str:
 @tool
 @confirm
 @path_expand
+@command_preview
 def edit_file(file_path: str, old_content: str, new_content: str) -> str:
     """Edits a file by replacing an exact match of old_content with new_content.
 
@@ -160,6 +168,7 @@ def edit_file(file_path: str, old_content: str, new_content: str) -> str:
 @tool
 @confirm
 @path_expand
+@command_preview
 def insert_text(file_path: str, line_number: int, content: str) -> str:
     """Inserts text before a given line number.
 
@@ -182,6 +191,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 
 @tool
+@command_preview
 def ask_user(question: str) -> str:
     """Do not hesitate to use it for clarification, confirmation, or additional information from User!
 
@@ -202,6 +212,7 @@ def ask_user(question: str) -> str:
 
 @tool
 @path_expand
+@command_preview
 def list_directory(path: str = ".") -> str:
     """Lists directory contents.
 
@@ -231,6 +242,7 @@ def list_directory(path: str = ".") -> str:
 
 @tool
 @path_expand
+@command_preview
 def get_tree(path: str = ".", max_depth: int = 5) -> str:
     """Returns a directory tree view with depth limit.
 
@@ -270,6 +282,7 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
 @tool
 @confirm
 @path_expand
+@command_preview
 def delete_file(file_path: str) -> str:
     """Deletes a file.
 
@@ -289,6 +302,7 @@ def delete_file(file_path: str) -> str:
 @tool
 @confirm
 @path_expand
+@command_preview
 def move_file(source: str, destination: str) -> str:
     """Moves a file or a directory.
 
@@ -311,6 +325,7 @@ def move_file(source: str, destination: str) -> str:
 
 
 @confirm
+@command_preview
 def dangerous_python_interpreter(code: str) -> str:
     import io
     import contextlib
@@ -325,6 +340,7 @@ def dangerous_python_interpreter(code: str) -> str:
         return (output + f"\nError: {e}") if output else f"Error: {e}"
 
 @tool
+@command_preview
 def execute_python(code: str) -> str:
     """Execute Python code.
 
@@ -340,6 +356,7 @@ def execute_python(code: str) -> str:
 
 
 @tool
+@command_preview
 def explorer(task: str) -> str:
     """Use this for ANY task that involves reading, searching, or navigating files! Unless you already know the exact file path AND only need one file.
 
@@ -350,10 +367,13 @@ def explorer(task: str) -> str:
 
 
 web_search = DuckDuckGoSearchTool()
+patch_tool(web_search, command_preview)
 web_search.description = "DuckDuckGo search."
 visit_webpage = VisitWebpageTool()
+patch_tool(visit_webpage, command_preview)
 visit_webpage.description = "Reads a URL as markdown."
 final_answer = FinalAnswerTool()
+patch_tool(final_answer, command_preview)
 final_answer.description = "Returns your final answer."
 
 EXPLORATION_TOOLS = [
