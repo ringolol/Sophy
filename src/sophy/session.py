@@ -112,7 +112,7 @@ def list_sessions() -> list[dict]:
                 "id": data["id"],
                 "created_at": data["created_at"],
                 "entry_count": len(data.get("entries", [])),
-                "preview": first_task[:100].rstrip('.') + '...',
+                "preview": first_task[:100].replace("\n", " ").rstrip('.') + '...',
                 "path": path,
             })
         except (json.JSONDecodeError, KeyError):

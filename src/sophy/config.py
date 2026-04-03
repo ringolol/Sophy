@@ -80,11 +80,17 @@ def pick_model(models: list[ModelPreset]) -> ModelPreset:
         for p in models
     ]
 
+    from questionary import Style
+    style = Style([
+        ('highlighted', 'fg:cyan'),
+    ])
+
     choice = questionary.select(
         "Choose a model:",
         choices=choices,
         use_indicator=True,
         show_description=True,
+        style=style,
     ).ask()
 
     if choice:
