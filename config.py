@@ -2,6 +2,9 @@ import os
 import json
 from dataclasses import dataclass
 
+import questionary
+
+
 DEFAULT_CONTEXT_WINDOW = 128000
 CONFIG_PATH = ".sophy/config.json"
 
@@ -40,3 +43,28 @@ def load_config() -> list[ModelPreset]:
         )
         for m in data.get("models", [])
     ]
+
+def pick_model(models: list[ModelPreset]) -> ModelPreset:
+    def provider(api_base: str):
+        if "google" in api_base:
+            return "Google"
+        if "yandex" in api_base:
+            return "Yandex"
+        return "Ollama"
+
+    choices = [
+        questionary.Choice(title=p.label, value=p, description=f"\n    Provider: {provider(p.api_base)}\n    Tools: {p.tools}")
+        for p in models
+    ]
+
+    choice = questionary.select(
+        "Choose a model:",
+        choices=choices,
+        use_indicator=True,
+        show_description=True,
+    ).ask()
+
+    if choice:
+        return choice
+
+    exit()

@@ -6,8 +6,8 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
 from smolagents.memory import ActionStep
 
-from config import ModelPreset
-from utils import parse_arguments, pick_model
+from config import ModelPreset, pick_model
+from utils import parse_arguments
 from guards import ToolDeniedException
 from ui import console, print_debug
 from context_compression import maybe_compress, compress

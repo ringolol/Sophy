@@ -5,7 +5,8 @@ from rich.console import Console
 from rich.syntax import Syntax
 from rich.panel import Panel
 
-console = Console()
+from ui import console
+
 
 class ToolDeniedException(BaseException):
     pass
