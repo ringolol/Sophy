@@ -1,6 +1,7 @@
 import os
+import re
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import questionary
 
@@ -18,6 +19,27 @@ class ModelPreset:
     tools: bool = True
     system_prompt: bool = True
     explorer: bool = False
+
+
+@dataclass
+class GuardConfig:
+    allow_all_edits: bool = False
+    allowed_command_patterns: list[re.Pattern] = field(default_factory=list)
+    project_dir: str = ""
+
+
+def load_guard_config() -> GuardConfig:
+    project_dir = os.path.dirname(os.path.abspath(CONFIG_PATH))
+    if not os.path.isfile(CONFIG_PATH):
+        return GuardConfig(project_dir=project_dir)
+    with open(CONFIG_PATH) as f:
+        data = json.load(f)
+    patterns = [re.compile(p) for p in data.get("allowed_command_patterns", [])]
+    return GuardConfig(
+        allow_all_edits=False,
+        allowed_command_patterns=patterns,
+        project_dir=project_dir,
+    )
 
 
 def _resolve_env(value: str) -> str:

@@ -1,4 +1,7 @@
 {
+  "allowed_command_patterns": [
+    "^git (status|diff|log|show|branch)"
+  ],
   "models": [
     {
       "label": "Qwen 3.5 35B (Ollama)",

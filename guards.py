@@ -1,11 +1,22 @@
 import difflib
 import functools
 import os
+import re
 from rich.console import Console
 from rich.syntax import Syntax
 from rich.panel import Panel
 
 from ui import console
+
+
+_guard_config = None
+_COMPOUND_CMD_RE = re.compile(r'(\|\||&&|;|\||&|`|\$\(|[<>])')
+_AUTO_EDIT_TOOLS = frozenset({"edit_file", "insert_text", "write_new_file"})
+
+
+def set_guard_config(config):
+    global _guard_config
+    _guard_config = config
 
 
 class ToolDeniedException(BaseException):
@@ -71,11 +82,36 @@ _PREVIEWERS = {
     "write_new_file": _preview_write,
 }
 
+def _can_auto_approve(fn_name, kwargs):
+    """Check if this call can be auto-approved based on guard config."""
+    if _guard_config is None:
+        return False
+
+    # File content edits: auto-approve if inside project dir
+    if fn_name in _AUTO_EDIT_TOOLS and _guard_config.allow_all_edits:
+        path = kwargs.get("file_path", "")
+        real = os.path.realpath(path)
+        if real.startswith(_guard_config.project_dir + os.sep):
+            return True
+
+    # Commands: auto-approve only simple commands matching allowed patterns
+    if fn_name == "run_command" and _guard_config.allowed_command_patterns:
+        cmd = kwargs.get("command", "")
+        if not _COMPOUND_CMD_RE.search(cmd):
+            for pattern in _guard_config.allowed_command_patterns:
+                if pattern.match(cmd):
+                    return True
+
+    return False
+
+
 def confirm(fn):
     """Confirmation decorator"""
 
     @functools.wraps(fn)
     def guarded_fn(*args, **kwargs):
+        auto = _can_auto_approve(fn.__name__, kwargs)
+
         console.print()
         console.rule(f"[bold yellow]Agent wants to run: {fn.__name__}[/bold yellow]")
         previewer = _PREVIEWERS.get(fn.__name__)
@@ -90,6 +126,11 @@ def confirm(fn):
                 console.print(f"[green](new file: {path})[/green]")
         else:
             console.print(Panel(str(kwargs), title="Args", border_style="dim"))
+
+        if auto:
+            console.print("[dim][green](auto-approved)[/green][/dim]")
+            return fn(*args, **kwargs)
+
         while (answer := input("Allow? [y/n]: ").strip().lower()) not in ("y", "n"):
             print("\033[A\033[2K", end="", flush=True)
         print("\033[A\033[2K", end="", flush=True)
