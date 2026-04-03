@@ -5,3 +5,5 @@
 !.sophy/config.json
 sophy.egg-info
 build
+__pycache__
+.mypy_cache
