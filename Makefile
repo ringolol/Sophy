@@ -1,2 +1,4 @@
 install:
-	pip install --force-reinstall .
+	pip install .
+install-dev:
+	pip install -e .
