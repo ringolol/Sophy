@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from rich.panel import Panel
 
-from ui import console
+from .ui import console
 
 
 _guard_config = None

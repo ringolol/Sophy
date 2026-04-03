@@ -1,8 +1,8 @@
 from enum import Enum
 from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates
 
-from tools import TOOLS, EXPLORATION_TOOLS, SUB_AGENTS
-from prompts_data import (
+from .tools import TOOLS, EXPLORATION_TOOLS, SUB_AGENTS
+from .prompts_data import (
     DIRECT_PROMPT_TEMPLATE, ROLE_TASK_SOLVER,
     DIRECT_CODE_PROMPT_TEMPLATE, ROLE_CODE_TASK_SOLVER,
     ROLE_EXPLORER, EXPLORER_PROMPT_TEMPLATE, ROLE_CODE_EXPLORER, EXPLORER_CODE_PROMPT_TEMPLATE

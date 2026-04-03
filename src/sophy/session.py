@@ -9,7 +9,7 @@ from smolagents.memory import TaskStep, ActionStep, ToolCall
 from smolagents.monitoring import Timing, TokenUsage
 import questionary
 
-from ui import console
+from .ui import console
 
 
 SESSIONS_DIR = ".sophy/sessions"

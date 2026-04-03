@@ -8,7 +8,7 @@ from smolagents import tool
 from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
 from smolagents.local_python_executor import InterpreterError
 
-from guards import confirm, path_expand
+from .guards import confirm, path_expand
 
 
 _history_provider = None

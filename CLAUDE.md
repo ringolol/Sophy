@@ -3,10 +3,10 @@
 - smolagents
 - openai api compatable models
 
-## Main Python Files
-- Main entry point: sophy.py
+## Main Python Files (src/sophy/)
+- Main entry point: __main__.py
 - Agents' tools: tools.py
-- Agents' prompts: prompts.py
+- Agents' prompts: prompts.py, prompts_data/
 - Agents' instantiation factory: factory.py
 - Session manager: session.py
 - Customizations to smolagents: patched_model.py, patched_agents.py, smolagents_patches.py

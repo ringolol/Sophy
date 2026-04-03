@@ -16,6 +16,9 @@ dependencies = [
 [project.scripts]
 sophy = "sophy:main"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.mypy]
 # optional: other settings
 

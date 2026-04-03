@@ -6,14 +6,14 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
 from smolagents.memory import ActionStep
 
-from config import ModelPreset, pick_model, load_guard_config
-from utils import parse_arguments
-from guards import ToolDeniedException, set_guard_config
-from ui import console, print_debug
-from context_compression import maybe_compress, compress
-from tools import set_history_provider
-from session import Session, load_session, pick_session
-from factory import get_model_presets, make_model, make_solver_agent, make_explorer_agent
+from .config import ModelPreset, pick_model, load_guard_config
+from .utils import parse_arguments
+from .guards import ToolDeniedException, set_guard_config
+from .ui import console, print_debug
+from .context_compression import maybe_compress, compress
+from .tools import set_history_provider
+from .session import Session, load_session, pick_session
+from .factory import get_model_presets, make_model, make_solver_agent, make_explorer_agent
 
 
 # guards
