@@ -32,6 +32,15 @@ def command_preview(func):
     return wrapper
 
 
+def final_output(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        console.print(f"[dim]Output:[/dim] [white]{result}[/white]")
+        return result
+    return wrapper
+
+
 def patch_tool(tool_instance, fn):
     """Patches the forward method of a tool instance to include command preview."""
     tool_instance.forward = fn(tool_instance.forward)

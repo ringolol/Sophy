@@ -9,7 +9,7 @@ from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool
 from smolagents.local_python_executor import InterpreterError
 
 from .guards import confirm, path_expand
-from .ui import command_preview, patch_tool
+from .ui import command_preview, final_output, patch_tool
 
 
 _history_provider = None
@@ -374,6 +374,7 @@ patch_tool(visit_webpage, command_preview)
 visit_webpage.description = "Reads a URL as markdown."
 final_answer = FinalAnswerTool()
 patch_tool(final_answer, command_preview)
+patch_tool(final_answer, final_output)
 final_answer.description = "Returns your final answer."
 
 EXPLORATION_TOOLS = [
