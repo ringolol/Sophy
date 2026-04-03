@@ -11,7 +11,7 @@ from .ui import console
 
 _guard_config = None
 _COMPOUND_CMD_RE = re.compile(r'(\|\||&&|;|\||&|`|\$\(|\$\{|[<>()\n])')
-_AUTO_EDIT_TOOLS = frozenset({"edit_file", "insert_text", "write_new_file"})
+_AUTO_EDIT_TOOLS = frozenset({"edit_file", "write_new_file"})
 
 
 def set_guard_config(config):
@@ -49,21 +49,6 @@ def _preview_edit(kwargs):
     new_file = original.replace(old_content, new_content, 1)
     return original.splitlines(keepends=True), new_file.splitlines(keepends=True), path
 
-def _preview_insert(kwargs):
-    """Build old/new lines for an insert_text call."""
-    path = kwargs.get("file_path", "")
-    line_number = kwargs.get("line_number", 1)
-    content = kwargs.get("content", "")
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            old_lines = f.readlines()
-    except FileNotFoundError:
-        return None, None, path
-    if not content.endswith("\n"):
-        content += "\n"
-    insert_at = max(0, min(line_number - 1, len(old_lines)))
-    new_lines = old_lines[:insert_at] + content.splitlines(keepends=True) + old_lines[insert_at:]
-    return old_lines, new_lines, path
 
 def _preview_write(kwargs):
     """Build old/new lines for a write_new_file call."""
@@ -78,7 +63,6 @@ def _preview_write(kwargs):
 
 _PREVIEWERS = {
     "edit_file": _preview_edit,
-    "insert_text": _preview_insert,
     "write_new_file": _preview_write,
 }
 
@@ -120,7 +104,7 @@ def confirm(fn):
             if old_lines is not None:
                 if not _print_diff(old_lines, new_lines, path):
                     def dummy(*args, **kwargs):
-                        return "File have NOT been changed!"
+                        return "File have NOT been changed. Try again!"
                     return dummy
             else:
                 console.print(f"[green](new file: {path})[/green]")

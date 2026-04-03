@@ -48,7 +48,7 @@ def build_system_prompt(
     """Build the system prompt with tool descriptions generated from the tool objects."""
 
     tool_sections = {
-        "file_ops": ["read_file", "edit_file", "insert_text", "write_new_file", "delete_file", "move_file"],
+        "file_ops": ["read_file", "edit_file", "write_new_file", "delete_file", "move_file"],
         "search": ["search_files", "search_content"],
         "system": ["run_command", "execute_python"],
         "navigation": ["list_directory", "get_tree"],

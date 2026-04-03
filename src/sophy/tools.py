@@ -1,3 +1,4 @@
+import difflib
 import subprocess
 import shlex
 import os
@@ -7,6 +8,8 @@ import warnings
 from smolagents import tool
 from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
 from smolagents.local_python_executor import InterpreterError
+from prompt_toolkit import prompt
+from prompt_toolkit.key_binding import KeyBindings
 
 from .guards import confirm, path_expand
 from .ui import command_preview, final_output, patch_tool
@@ -46,15 +49,12 @@ def read_file(file_path: str) -> str:
         file_path: The path to the file to read.
     """
     with open(file_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    width = len(str(len(lines)))
-    numbered = [f"{i:>{width}} | {line}" for i, line in enumerate(lines, 1)]
-    return "".join(numbered)
+        return f.read()
 
 @tool
+@command_preview
 @confirm
 @path_expand
-@command_preview
 def write_new_file(file_path: str, content: str) -> str:
     """Writes a new file.
 
@@ -62,10 +62,26 @@ def write_new_file(file_path: str, content: str) -> str:
         file_path: The path to the file to write.
         content: The content to write to the file.
     """
+    exists = os.path.exists(file_path)
+    original_lines = []
+    if exists:
+        with open(file_path, "r", encoding="utf-8") as f:
+            original_lines = f.readlines()
+
     os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
-    return f"Written {len(content)} chars to {file_path}"
+
+    new_lines = content.splitlines(keepends=True)
+
+    diff = list(difflib.unified_diff(
+        original_lines,
+        new_lines,
+        fromfile=f"a/{file_path}" if exists else "/dev/null",
+        tofile=f"b/{file_path}",
+        lineterm=""
+    ))
+    return f"Written {len(content)} chars to {file_path}\n" + "\n".join(diff)
 
 @tool
 @path_expand
@@ -116,8 +132,9 @@ def search_content(text_pattern: str, directory: str = ".", file_pattern: str = 
     return "\n".join(results)
 
 @tool
-@confirm
 @command_preview
+@confirm
+@path_expand
 def run_command(command: str) -> str:
     """Runs a shell command.
 
@@ -142,9 +159,9 @@ def run_command(command: str) -> str:
     return output or "(no output)"
 
 @tool
+@command_preview
 @confirm
 @path_expand
-@command_preview
 def edit_file(file_path: str, old_content: str, new_content: str) -> str:
     """Edits a file by replacing an exact match of old_content with new_content.
 
@@ -157,38 +174,22 @@ def edit_file(file_path: str, old_content: str, new_content: str) -> str:
         content = f.read()
     count = content.count(old_content)
     if count == 0:
-        return f"Error: old_content not found in {file_path}."
+        return f"Error: old_content not found in {file_path}. Try again!"
     if count > 1:
-        return f"Error: old_content matches {count} locations in {file_path}. Provide more context to make it unique."
+        return f"Error: old_content matches {count} locations in {file_path}. Provide more context to make it unique!"
     new_file = content.replace(old_content, new_content, 1)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(new_file)
-    return f"Edited {file_path}"
 
-@tool
-@confirm
-@path_expand
-@command_preview
-def insert_text(file_path: str, line_number: int, content: str) -> str:
-    """Inserts text before a given line number.
+    diff = list(difflib.unified_diff(
+        content.splitlines(),
+        new_file.splitlines(),
+        fromfile=f"a/{file_path}",
+        tofile=f"b/{file_path}",
+        lineterm=""
+    ))
+    return f"Edited {file_path}\n" + "\n".join(diff)
 
-    Args:
-        file_path: The path to the file to edit.
-        line_number: The line number to insert before.
-        content: The text to insert.
-    """
-    with open(file_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    if not content.endswith("\n"):
-        content += "\n"
-    insert_at = max(0, min(line_number - 1, len(lines)))
-    lines.insert(insert_at, content)
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
-    return f"Inserted text at line {insert_at + 1} in {file_path}"
-
-from prompt_toolkit import prompt
-from prompt_toolkit.key_binding import KeyBindings
 
 @tool
 @command_preview
@@ -280,9 +281,9 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
     return _build_tree(path, 0, '')
 
 @tool
+@command_preview
 @confirm
 @path_expand
-@command_preview
 def delete_file(file_path: str) -> str:
     """Deletes a file.
 
@@ -300,9 +301,9 @@ def delete_file(file_path: str) -> str:
         return f"Error deleting file: {str(e)}"
 
 @tool
+@command_preview
 @confirm
 @path_expand
-@command_preview
 def move_file(source: str, destination: str) -> str:
     """Moves a file or a directory.
 
@@ -325,7 +326,6 @@ def move_file(source: str, destination: str) -> str:
 
 
 @confirm
-@command_preview
 def dangerous_python_interpreter(code: str) -> str:
     import io
     import contextlib
@@ -389,7 +389,6 @@ EXPLORATION_TOOLS = [
 TOOLS = [
     read_file,
     edit_file,
-    insert_text,
     write_new_file,
     run_command,
     ask_user,

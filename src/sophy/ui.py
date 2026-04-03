@@ -20,11 +20,12 @@ def command_preview(func):
         console.print(f"[bold blue]{wrapper.__name__}...[/bold blue]")
         if args or kwargs:
             for key, value in kwargs.items():
-                console.print(f"  [cyan]{key}[/cyan]: {value}")
+                console.print(f"  [cyan]{key}[/cyan]:\n{value}")
             for i, arg in enumerate(args):
-                console.print(f"  [cyan]arg{i}[/cyan]: {arg}")
+                console.print(f"  [cyan]arg{i}[/cyan]:\n{arg}")
 
         result = func(*args, **kwargs)
+        print_debug(f"[bold blue]Result:[/bold blue]\n{result}")
 
         return result
     return wrapper
