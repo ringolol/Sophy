@@ -87,7 +87,7 @@ def load_config() -> Config:
     return Config(models=models, custom_commands=custom_commands)
 
 
-def pick_model(models: list[ModelPreset]) -> ModelPreset:
+def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> ModelPreset:
     def provider(api_base: str):
         if "google" in api_base:
             return "Google"
@@ -105,9 +105,17 @@ def pick_model(models: list[ModelPreset]) -> ModelPreset:
         ('highlighted', 'fg:cyan'),
     ])
 
+    default_index = 0
+    if default:
+        for i, p in enumerate(models):
+            if p == default:
+                default_index = i
+                break
+
     choice = questionary.select(
         "Choose a model:",
         choices=choices,
+        default=models[default_index],
         use_indicator=True,
         show_description=True,
         style=style,

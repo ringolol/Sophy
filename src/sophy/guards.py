@@ -53,15 +53,6 @@ def confirm(fn):
     def guarded_fn(*args, **kwargs):
         auto = _can_auto_approve(fn.__name__, kwargs)
 
-        previewer = _PREVIEWERS.get(fn.__name__)
-        if previewer:
-            old_lines, new_lines, path = previewer(kwargs)
-            if old_lines is not None:
-                if not _print_diff(old_lines, new_lines, path):
-                    def dummy(*args, **kwargs):
-                        return "File have NOT been changed. Try again!"
-                    return dummy
-
         if auto:
             result = fn(*args, **kwargs)
             console.print("[dim][green](auto-approved)[/green][/dim]")

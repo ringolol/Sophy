@@ -53,7 +53,7 @@ def agent_loop():
 
         solver_agent = make_solver_agent(preset, new_model, explorer_agent)
         load_session(solver_agent, session_holder[0], print_history=False)
-        console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
+        console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]")
         print_session_separator()
 
     print_debug(f'[dim]{solver_agent.system_prompt}[/dim]')
@@ -121,7 +121,7 @@ def agent_loop():
             print_session_separator()
             continue
         if task == "/model":
-            switch_model(pick_model(available_presets))
+            switch_model(pick_model(available_presets, default=solver_preset))
             continue
 
         for cmd in custom_commands:
