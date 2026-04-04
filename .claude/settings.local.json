@@ -6,7 +6,8 @@
       "WebFetch(domain:pypi.org)",
       "Bash(ls:*)",
       "Bash(grep:*)",
-      "Bash(pip show:*)"
+      "Bash(pip show:*)",
+      "Bash(head:*)"
     ]
   }
 }
