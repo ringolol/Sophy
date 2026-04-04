@@ -12,7 +12,6 @@ console = Console()
 
 def print_session_separator():
     console.rule(style="dim")
-    console.print()
 
 
 def _print_diff(old_lines, new_lines, path) -> bool:

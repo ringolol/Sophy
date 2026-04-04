@@ -102,10 +102,10 @@ def list_sessions() -> list[dict]:
     """Returns session metadata sorted by creation time (newest first)."""
     sessions_dir = get_user_session_dir()
     sessions = []
-    
+
     if not os.path.isdir(sessions_dir):
         return sessions
-        
+
     for fname in os.listdir(sessions_dir):
         if not fname.endswith(".json"):
             continue
@@ -140,9 +140,6 @@ def load_session(agent, s: Session, print_history=True):
             console.print(Panel(entry.task, title="[bold green]You[/bold green]", title_align="left", border_style="green", padding=(0, 1)))
             console.print(Panel(entry.result, title="[bold yellow]Agent[/bold yellow]", title_align="left", border_style="yellow", padding=(0, 1)))
         log_context_usage(None, agent)
-        console.rule(style="dim")
-        console.print()
-
 
 
 def pick_session() -> Session:

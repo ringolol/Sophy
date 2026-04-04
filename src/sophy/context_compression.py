@@ -92,7 +92,7 @@ def compress(agent, session_holder: list) -> None:
     agent.memory.steps.append(TaskStep(task=f"Previous conversation summary:\n{summary}"))
     agent.memory.steps.extend(recent_steps)
 
-    console.print(f"[bold green]New session {new_session.id} created with compressed context.[/bold green]\n")
+    console.print(f"[bold green]New session {new_session.id} created with compressed context.[/bold green]")
 
 
 def maybe_compress(agent, session_holder: list, model_preset: ModelPreset) -> None:

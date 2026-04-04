@@ -56,13 +56,15 @@ def agent_loop():
         solver_agent = make_solver_agent(preset, new_model, explorer_agent)
         load_session(solver_agent, session_holder[0], print_history=False)
         console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]")
-        print_session_separator()
 
     print_debug(f'[dim]{solver_agent.system_prompt}[/dim]')
     session_holder[0] = pick_session()
     console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
     console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
-    console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /model to switch model, /compress to compress context, /pure <prompt> to run without system prompt. Ctrl+C to stop execution")
+
+    commands_list = ["?", "/quit", "/resume", "/new", "/model", "/compress", "/pure", "/fork"] + [c.command for c in custom_commands]
+    console.print(f"Commands: {', '.join(commands_list[1:])}\nType ? for details")
+
     load_session(solver_agent, session_holder[0])
     print_session_separator()
 
@@ -76,14 +78,13 @@ def agent_loop():
     def _(event):
         event.current_buffer.newline()
 
-    commands = ['/quit', '/new', '/fork', '/compress', '/resume', '/model', '/pure'] + [c.command for c in custom_commands]
-    completer = WordCompleter(commands, ignore_case=True, sentence=True)
+    completer = WordCompleter(commands_list, ignore_case=True, sentence=True)
 
     while True:
         session = session_holder[0]
         try:
             task = prompt(
-                "❯ ",
+                "\n❯ ",
                 multiline=True,
                 key_bindings=bindings,
                 completer=completer,
@@ -92,6 +93,30 @@ def agent_loop():
         except KeyboardInterrupt:
             console.print("[dim]cya[/dim]")
             exit()
+
+        if task == "?":
+            console.print("Commands:")
+            commands = [
+                "/quit - exit",
+                "/resume - switch sessions",
+                "/new - create a new session",
+                "/model - switch model",
+                "/compress - compress context",
+                "/pure <prompt> - run without system prompt",
+                "/fork - fork session"
+            ]
+            for cmd in commands:
+                console.print(f"  {cmd}")
+
+            if custom_commands:
+                console.print("\nCustom commands:")
+                prompt_limit = 100
+                for cmd in custom_commands:
+                    prompt_text = (cmd.prompt[:prompt_limit] + '...') if len(cmd.prompt) > prompt_limit else cmd.prompt
+                    console.print(f"  {cmd.command} ➔ {prompt_text}")
+
+            console.print("\nCtrl+C to stop execution")
+            continue
 
         if task == "/quit":
             if session.entries:
@@ -103,52 +128,43 @@ def agent_loop():
                 session.save_auto()
             session_holder[0] = Session()
             solver_agent.memory.reset()
-            console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]\n")
+            console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
             print_session_separator()
             continue
         if task == "/fork":
             if session.entries:
                 session.save_auto()
 
-            # Create a new session and copy the entries from the current one
             new_session = Session(entries=list(session.entries), is_forked=True)
             session_holder[0] = new_session
 
-            # The memory is already restored in solver_agent due to load_session(solver_agent, session)
-            # happening before or during the loop, but we should ensure the agent's memory
-            # matches the new session (which is a copy of the old one anyway).
-            # The solver_agent's memory is already at the state of the current session entries.
-
-            console.print(f"[dim][bold]Session forked to:[/bold] {session_holder[0].id}[/dim]\n")
+            console.print(f"[dim][bold]Session forked to:[/bold] {session_holder[0].id}[/dim]")
             print_session_separator()
             continue
         if task == "/compress":
             compress(solver_agent, session_holder)
+            print_session_separator()
             continue
         if task == "/resume":
             if session.entries:
                 session.save_auto()
             session_holder[0] = pick_session()
-            console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]\n")
+            console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
             load_session(solver_agent, session_holder[0])
             print_session_separator()
             continue
         if task == "/model":
             switch_model(pick_model(available_presets, default=solver_preset))
+            print_session_separator()
             continue
 
         inject_system_prompt = True
         if task == "/pure":
             try:
-                task = prompt("❯ [pure mode] ", multiline=True, key_bindings=bindings).strip()
+                task = prompt("\n❯ [pure mode] ", multiline=True, key_bindings=bindings).strip()
             except KeyboardInterrupt:
                 continue
-        inject_system_prompt = False
-
-        # inject_system_prompt = True
-        # if task.startswith("/pure "):
-        #     task = task[len("/pure "):].strip()
-        #     inject_system_prompt = False
+            inject_system_prompt = False
 
         if not task:
             continue
