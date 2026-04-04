@@ -31,72 +31,70 @@ set_guard_config(load_guard_config())
 session_holder = [Session()]
 set_history_provider(session_holder[0].get_summary)
 
-is_busy = asyncio.Event()
+# solver busy flag
+is_solver_busy = asyncio.Event()
+
 
 def get_prompt_decor():
-    if is_busy.is_set():
+    if is_solver_busy.is_set():
         return HTML('<b>❯</b> <ansiyellow>[BUSY]</ansiyellow> ')
     return HTML('<b>❯</b> ')
 
-def refresh_ui():
-    try:
-        get_app().invalidate()
-    except Exception:
-        pass
-
-@Condition
-def is_not_busy():
-    return not is_busy.is_set()
 
 async def async_agent_loop():
     set_main_loop(asyncio.get_running_loop())
     args = parse_arguments()
     config = load_config()
 
+    # get available presets
     custom_models = []
     if args.model and args.api_base and args.api_key:
         custom_models.append(ModelPreset(args.model, args.api_base, args.api_key, "Custom"))
     available_presets = custom_models + config.models
-    solver_preset = await pick_model(available_presets)
-
     available_explorer_presets = [p for p in available_presets if p.explorer]
+
+    # models presets
+    solver_preset = await pick_model(available_presets)
     explorer_preset = available_explorer_presets[0] if available_explorer_presets else solver_preset
 
     # models
-    explorer_model = make_model(explorer_preset)
     solver_model = make_model(solver_preset)
+    explorer_model = make_model(explorer_preset)
 
     # agents
     explorer_agent = make_explorer_agent(explorer_model, use_code_format=not explorer_preset.tools)
     solver_agent = make_solver_agent(solver_preset, solver_model, explorer_agent)
-
-    def switch_model(preset: ModelPreset):
-        nonlocal solver_preset, solver_agent, explorer_agent, explorer_model
-        if preset == solver_preset:
-            return
-        solver_preset = preset
-        new_model = make_model(preset)
-
-        solver_agent = make_solver_agent(preset, new_model, explorer_agent)
-        load_session(solver_agent, session_holder[0], print_history=False)
-        console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]")
-
     print_debug(f'[dim]{solver_agent.system_prompt}[/dim]')
-    session_holder[0] = await pick_session()
-    console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
-    console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
 
+    # session
+    session_holder[0] = await pick_session()
+
+    # print header
+    def print_header():
+        console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
+        console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
+    print_header()
+
+    # commands
     custom_commands = config.custom_commands
     commands_list = ["?", "/quit", "/resume", "/new", "/model", "/compress", "/pure", "/fork"] + [c.command for c in custom_commands]
+
+    # print commands
     console.print(f"Commands: {', '.join(commands_list[1:])}\nType ? for details")
 
+    # load sessions
     load_session(solver_agent, session_holder[0])
-    print_session_separator()
+
+    # print footer
+    def print_footer():
+        log_context_usage(None, solver_agent)
+        print_session_separator()
+    print_footer()
 
     # prompt configurations
     bindings = KeyBindings()
 
-    @bindings.add('enter', filter=is_not_busy)
+    @bindings.add('enter', filter=Condition(lambda: not is_solver_busy.is_set()))
     def _(event):
         event.current_buffer.validate_and_handle()
 
@@ -126,17 +124,15 @@ async def async_agent_loop():
                 ctypes.py_object(KeyboardInterrupt),
             )
 
+    # run agent task
     async def run_agent(task, inject_system_prompt):
-        is_busy.set()
-        refresh_ui()
+        is_solver_busy.set()
         try:
             maybe_compress(solver_agent, session_holder, solver_preset)
             if not inject_system_prompt:
                 console.print("[dim]running task without system prompt injection.[/dim]")
 
-            result = await asyncio.to_thread(run_agent_sync, task, False, inject_system_prompt)
-
-            log_context_usage(_, solver_agent)
+            final_answer = await asyncio.to_thread(run_agent_sync, task, False, inject_system_prompt)
 
             tools_used = []
             for step in solver_agent.memory.steps:
@@ -146,7 +142,7 @@ async def async_agent_loop():
 
             session_holder[0].add_entry(
                 task=task,
-                result=str(result),
+                result=str(final_answer),
                 steps=solver_agent.memory.get_full_steps(),
                 tools_used=tools_used,
             )
@@ -167,13 +163,14 @@ async def async_agent_loop():
         except Exception:
             console.print(f'[red]{traceback.format_exc()}[/red]')
         finally:
-            is_busy.clear()
-            refresh_ui()
+            is_solver_busy.clear()
             session_holder[0].save_auto()
-            print_session_separator()
+            print_footer()
 
+    # main loop
     while True:
         try:
+            # user prompt
             with patch_stdout(raw=True):
                 task = await prompt_session.prompt_async(
                     get_prompt_decor,
@@ -183,12 +180,13 @@ async def async_agent_loop():
                 )
                 task = task.strip()
         except KeyboardInterrupt:
-            if is_busy.is_set():
+            if is_solver_busy.is_set():
                 interrupt_agent()
             else:
                 exit()
             continue
 
+        # commands
         if task == "?":
             console.print("Commands:")
             commands = [
@@ -212,7 +210,6 @@ async def async_agent_loop():
 
             console.print("\nCtrl+C to stop execution")
             continue
-
         if task == "/quit":
             if session_holder[0].entries:
                 session_holder[0].save_auto()
@@ -224,7 +221,7 @@ async def async_agent_loop():
             session_holder[0] = Session()
             solver_agent.memory.reset()
             console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
-            print_session_separator()
+            print_footer()
             continue
         if task == "/fork":
             if session_holder[0].entries:
@@ -234,11 +231,11 @@ async def async_agent_loop():
             session_holder[0] = new_session
 
             console.print(f"[dim][bold]Session forked to:[/bold] {session_holder[0].id}[/dim]")
-            print_session_separator()
+            print_footer()
             continue
         if task == "/compress":
             compress(solver_agent, session_holder)
-            print_session_separator()
+            print_footer()
             continue
         if task == "/resume":
             if session_holder[0].entries:
@@ -246,11 +243,21 @@ async def async_agent_loop():
             session_holder[0] = await pick_session()
             console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
             load_session(solver_agent, session_holder[0])
-            print_session_separator()
+            print_footer()
             continue
         if task == "/model":
+            def switch_model(preset: ModelPreset):
+                nonlocal solver_preset, solver_agent, explorer_agent, explorer_model
+                if preset == solver_preset:
+                    return
+                solver_preset = preset
+                new_model = make_model(preset)
+
+                solver_agent = make_solver_agent(preset, new_model, explorer_agent)
+                load_session(solver_agent, session_holder[0], print_history=False)
+                console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]")
             switch_model(await pick_model(available_presets, default=solver_preset))
-            print_session_separator()
+            print_footer()
             continue
 
         inject_system_prompt = True
@@ -267,15 +274,17 @@ async def async_agent_loop():
             except KeyboardInterrupt:
                 continue
 
-        if not task:
-            continue
-
         for cmd in custom_commands:
             if task == cmd.command:
                 task = cmd.prompt
                 print_debug(task)
 
-        asyncio.create_task(run_agent(task, inject_system_prompt))
+        if not task:
+            continue
+
+        asyncio.create_task(
+            run_agent(task, inject_system_prompt)
+        )
 
 
 def main():

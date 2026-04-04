@@ -140,7 +140,6 @@ def load_session(agent, s: Session, print_history=True):
         for entry in s.entries:
             console.print(Panel(entry.task, title="[bold green]You[/bold green]", title_align="left", border_style="green", padding=(0, 1)))
             console.print(Panel(entry.result, title="[bold yellow]Agent[/bold yellow]", title_align="left", border_style="yellow", padding=(0, 1)))
-        log_context_usage(None, agent)
 
 
 async def pick_session() -> Session:
