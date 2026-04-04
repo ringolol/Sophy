@@ -65,14 +65,14 @@ def _get_last_task_steps(agent) -> list:
     return agent.memory.steps[last_task_idx:]
 
 
-def compress(agent, session_holder: list) -> None:
+def compress(agent, app_state) -> None:
     if not agent.memory.steps:
         console.print("[dim]Nothing to compress.[/dim]")
         return
 
     console.print("[bold yellow]Compressing context...[/bold yellow]")
 
-    old_session = session_holder[0]
+    old_session = app_state.session
     old_session.save_auto()
     console.print(f"[dim]Old session {old_session.id} saved.[/dim]")
 
@@ -86,7 +86,7 @@ def compress(agent, session_holder: list) -> None:
         steps=[],
         tools_used=[],
     )
-    session_holder[0] = new_session
+    app_state.session = new_session
 
     agent.memory.reset()
     agent.memory.steps.append(TaskStep(task=f"Previous conversation summary:\n{summary}"))
@@ -95,7 +95,7 @@ def compress(agent, session_holder: list) -> None:
     console.print(f"[bold green]New session {new_session.id} created with compressed context.[/bold green]")
 
 
-def maybe_compress(agent, session_holder: list, model_preset: ModelPreset) -> None:
+def maybe_compress(agent, app_state, model_preset: ModelPreset) -> None:
     input_tokens = _get_last_input_tokens(agent)
     if input_tokens is None:
         return
@@ -112,4 +112,4 @@ def maybe_compress(agent, session_holder: list, model_preset: ModelPreset) -> No
     if prompt_in_terminal("\033[36mCompress context?\033[0m [y/n]: ").strip().lower() != "y":
         return
 
-    compress(agent, session_holder)
+    compress(agent, app_state)

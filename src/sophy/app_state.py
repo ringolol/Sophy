@@ -9,19 +9,15 @@ from .session import Session
 
 @dataclass
 class AppState:
-    session_holder: list = field(default_factory=list)
+    session: Session = field(default_factory=Session)
     is_solver_busy: asyncio.Event = field(default_factory=asyncio.Event)
-    agent_thread_id_holder: list = field(default_factory=lambda: [None])
+    agent_thread_id: int | None = None
 
 
 def init_app() -> AppState:
     set_guard_config(load_guard_config())
 
-    session_holder = [Session()]
-    set_history_provider(session_holder[0].get_summary)
+    state = AppState()
+    set_history_provider(lambda: state.session.get_summary())
 
-    return AppState(
-        session_holder=session_holder,
-        is_solver_busy=asyncio.Event(),
-        agent_thread_id_holder=[None],
-    )
+    return state

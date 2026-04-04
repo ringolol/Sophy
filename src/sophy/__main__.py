@@ -17,12 +17,12 @@ from .ui import console, set_main_loop, print_footer
 async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_prompt):
     app_state.is_solver_busy.set()
     try:
-        maybe_compress(solver_agent, app_state.session_holder, solver_preset)
+        maybe_compress(solver_agent, app_state, solver_preset)
         if not inject_system_prompt:
             console.print("[dim]running task without system prompt injection.[/dim]")
 
         final_answer = await asyncio.to_thread(
-            run_agent_sync, app_state.agent_thread_id_holder, solver_agent, task, False, inject_system_prompt
+            run_agent_sync, app_state, solver_agent, task, False, inject_system_prompt
         )
 
         tools_used = []
@@ -31,7 +31,7 @@ async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_
                 for tc in step.tool_calls:
                     tools_used.append(tc.name)
 
-        app_state.session_holder[0].add_entry(
+        app_state.session.add_entry(
             task=task,
             result=str(final_answer),
             steps=solver_agent.memory.get_full_steps(),
@@ -45,7 +45,7 @@ async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_
             timing=Timing(start_time=time.time(), end_time=time.time())
         )
         solver_agent.memory.steps.append(observation_step)
-        app_state.session_holder[0].add_entry(
+        app_state.session.add_entry(
             task=task,
             result="[interrupted]",
             steps=solver_agent.memory.get_full_steps(),
@@ -55,7 +55,7 @@ async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_
         console.print(f'[red]{traceback.format_exc()}[/red]')
     finally:
         app_state.is_solver_busy.clear()
-        app_state.session_holder[0].save_auto()
+        app_state.session.save_auto()
         print_footer(solver_agent)
 
 
@@ -84,7 +84,7 @@ async def async_agent_loop():
                 task = task.strip()
         except KeyboardInterrupt:
             if app_state.is_solver_busy.is_set():
-                interrupt_agent(app_state.agent_thread_id_holder)
+                interrupt_agent(app_state)
             else:
                 exit(0)
             continue

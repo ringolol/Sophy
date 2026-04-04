@@ -10,7 +10,7 @@ The `__main__.py` file has grown significantly and handles too many responsibili
    - Define a registry or a dispatch map for command handlers.
    - Replace the `if/elif` chain in the main loop with calls to these handlers.
 
-2. **Refactor `async_agent_loop`**
+2. [DONE] **Refactor `async_agent_loop`**
    - Extract logic into smaller, dedicated functions:
      - `initialize_agents()` (presets, models, agents)
      - `configure_prompt()` (prompt configurations)
@@ -18,14 +18,14 @@ The `__main__.py` file has grown significantly and handles too many responsibili
      - move `run_agent` outside with its support function (run_agent_sync, interrupt_agent)
    - Move initialization logic out of the main loop.
 
-3. **Improve State Management**
+3. [DONE] **Improve State Management**
    - Replace `session_holder` (list-based) with a proper `AppContext` or `State` class.
    - Centralize `session`, `solver_agent`, `solver_preset`, etc., in this object.
 
-4. **Refactor `run_agent` and Interrupt Logic**
+4. [DONE] **Refactor `run_agent` and Interrupt Logic**
    - Move agent execution and thread-based interruption logic to a new file or utility module (e.g., `src/sophy/agent_executor.py`).
    - Keep the main event loop clean and focused on input/command processing.
 
-5. **Consolidate Initialization**
+5. [DONE] **Consolidate Initialization**
    - Create an `init_app()` function to handle global initializations (`set_guard_config`, setting up history providers, etc.).
    - This improves testability and simplifies the startup flow.

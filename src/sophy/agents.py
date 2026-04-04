@@ -3,7 +3,9 @@ import threading
 from dataclasses import dataclass
 from typing import Any
 
-from .config import ModelPreset, pick_model, load_config
+from smolagents.agents import MultiStepAgent
+
+from .config import Config, ModelPreset, pick_model, load_config
 from .debug import print_debug
 from .factory import make_model, make_solver_agent, make_explorer_agent
 from .utils import parse_arguments
@@ -11,11 +13,11 @@ from .utils import parse_arguments
 
 @dataclass
 class AgentContext:
-    solver_agent: Any
-    explorer_agent: Any
+    solver_agent: MultiStepAgent
+    explorer_agent: MultiStepAgent
     solver_preset: ModelPreset
     available_presets: list
-    config: Any
+    config: Config
 
 
 async def initialize_agents() -> AgentContext:
@@ -51,16 +53,20 @@ async def initialize_agents() -> AgentContext:
     )
 
 
-def run_agent_sync(agent_thread_id_holder, solver_agent, task, reset, inject_system_prompt):
-    agent_thread_id_holder[0] = threading.current_thread().ident  # type: ignore
+def run_agent_sync(app_state, solver_agent, task, reset, inject_system_prompt):
+    """Run agent and track thread id in app_state"""
+
+    app_state.agent_thread_id = threading.current_thread().ident  # type: ignore
     try:
         return solver_agent.run(task, reset=reset, inject_system_prompt=inject_system_prompt)
     finally:
-        agent_thread_id_holder[0] = None
+        app_state.agent_thread_id = None
 
 
-def interrupt_agent(agent_thread_id_holder):
-    tid = agent_thread_id_holder[0]
+def interrupt_agent(app_state):
+    """Propagate KeyboardInterrupt to agent thread"""
+
+    tid = app_state.agent_thread_id
     if tid is not None:
         ctypes.pythonapi.PyThreadState_SetAsyncExc(
             ctypes.c_ulong(tid),

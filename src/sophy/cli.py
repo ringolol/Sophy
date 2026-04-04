@@ -8,9 +8,9 @@ from .commands import CommandHandler, command_registry
 from .ui import console
 
 
-def configure_command_handler(ctx, session_holder) -> tuple[CommandHandler, list[str]]:
+def configure_command_handler(ctx, app_state) -> tuple[CommandHandler, list[str]]:
     command_handler = CommandHandler(
-        ctx.solver_agent, session_holder, ctx.solver_preset, ctx.available_presets,
+        ctx.solver_agent, app_state, ctx.solver_preset, ctx.available_presets,
         ctx.explorer_agent, custom_commands=ctx.config.custom_commands,
     )
 
@@ -38,7 +38,7 @@ def configure_prompt_toolkit(is_solver_busy, commands_list) -> tuple[PromptSessi
 
 
 def setup_cli(ctx, app_state) -> tuple[CommandHandler, PromptSession, WordCompleter]:
-    command_handler, commands_list = configure_command_handler(ctx, app_state.session_holder)
+    command_handler, commands_list = configure_command_handler(ctx, app_state)
 
     prompt_session, completer = configure_prompt_toolkit(app_state.is_solver_busy, commands_list)
 

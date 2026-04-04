@@ -35,9 +35,9 @@ command_registry = CommandRegistry()
 
 
 class CommandHandler:
-    def __init__(self, solver_agent, session_holder, solver_preset, available_presets, explorer_agent, custom_commands=None, prompt_fn=None):
+    def __init__(self, solver_agent, app_state, solver_preset, available_presets, explorer_agent, custom_commands=None, prompt_fn=None):
         self.solver_agent = solver_agent
-        self.session_holder = session_holder
+        self.app_state = app_state
         self.solver_preset = solver_preset
         self.available_presets = available_presets
         self.explorer_agent = explorer_agent
@@ -79,45 +79,45 @@ async def help_handler(handler: CommandHandler):
 
 @command_registry.add(cmd="/quit", description="exit")
 async def quit_handler(handler: CommandHandler):
-    if handler.session_holder[0].entries:
-        handler.session_holder[0].save_auto()
-        console.print(f"[green]Session {handler.session_holder[0].id} saved.[/green]")
+    if handler.app_state.session.entries:
+        handler.app_state.session.save_auto()
+        console.print(f"[green]Session {handler.app_state.session.id} saved.[/green]")
     exit(0)
 
 
 @command_registry.add(cmd="/new", description="create a new session")
 async def new_handler(handler: CommandHandler):
-    if handler.session_holder[0].entries:
-        handler.session_holder[0].save_auto()
-    handler.session_holder[0] = Session()
+    if handler.app_state.session.entries:
+        handler.app_state.session.save_auto()
+    handler.app_state.session = Session()
     handler.solver_agent.memory.reset()
-    console.print(f"[dim][bold]Session:[/bold] {handler.session_holder[0].id}[/dim]")
+    console.print(f"[dim][bold]Session:[/bold] {handler.app_state.session.id}[/dim]")
     handler._print_footer()
 
 
 @command_registry.add(cmd="/fork", description="fork session")
 async def fork_handler(handler: CommandHandler):
-    if handler.session_holder[0].entries:
-        handler.session_holder[0].save_auto()
-    new_session = Session(entries=list(handler.session_holder[0].entries), is_forked=True)
-    handler.session_holder[0] = new_session
-    console.print(f"[dim][bold]Session forked to:[/bold] {handler.session_holder[0].id}[/dim]")
+    if handler.app_state.session.entries:
+        handler.app_state.session.save_auto()
+    new_session = Session(entries=list(handler.app_state.session.entries), is_forked=True)
+    handler.app_state.session = new_session
+    console.print(f"[dim][bold]Session forked to:[/bold] {handler.app_state.session.id}[/dim]")
     handler._print_footer()
 
 
 @command_registry.add(cmd="/compress", description="compress context")
 async def compress_handler(handler: CommandHandler):
-    compress(handler.solver_agent, handler.session_holder)
+    compress(handler.solver_agent, handler.app_state)
     handler._print_footer()
 
 
 @command_registry.add(cmd="/resume", description="switch sessions")
 async def resume_handler(handler: CommandHandler):
-    if handler.session_holder[0].entries:
-        handler.session_holder[0].save_auto()
-    handler.session_holder[0] = await pick_session()
-    console.print(f"[dim][bold]Session:[/bold] {handler.session_holder[0].id}[/dim]")
-    load_session(handler.solver_agent, handler.session_holder[0])
+    if handler.app_state.session.entries:
+        handler.app_state.session.save_auto()
+    handler.app_state.session = await pick_session()
+    console.print(f"[dim][bold]Session:[/bold] {handler.app_state.session.id}[/dim]")
+    load_session(handler.solver_agent, handler.app_state.session)
     handler._print_footer()
 
 
@@ -128,7 +128,7 @@ async def model_handler(handler: CommandHandler):
         handler.solver_preset = preset
         new_model = make_model(preset)
         handler.solver_agent = make_solver_agent(preset, new_model, handler.explorer_agent)
-        load_session(handler.solver_agent, handler.session_holder[0], print_history=False)
+        load_session(handler.solver_agent, handler.app_state.session, print_history=False)
         console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]")
     handler._print_footer()
 
