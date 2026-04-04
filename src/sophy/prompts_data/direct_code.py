@@ -73,12 +73,13 @@ MANDATORY RULES — VIOLATION MEANS FAILURE:
 # your code
 </code>` tag. If you provide NO code tag, you fail!
 2. Do NOT USE MarkDown code block ```python```, USE code tags <code></code>!
-3. TOOL CALLS AS FUNCTIONS: Call tools as regular Python functions with keyword arguments. Example: `<code>read_file(file_path="main.py")</code>`.
-4. USE print(): Use `<code>
+3. TOOLS ARE STATELESS. Do NOT call them multiple times.
+4. TOOL CALLS AS FUNCTIONS: Call tools as regular Python functions with keyword arguments. Example: `<code>read_file(file_path="main.py")</code>`.
+5. USE print(): Use `<code>
 print("...")
 </code>` to output intermediate results you need for subsequent steps. These will appear in the Observation.
-5. STATE PERSISTS: Variables and imports persist between code executions. You can reference previously defined variables.
-6. FINAL ANSWER: When you have the answer, you MUST call `<code>
+6. STATE PERSISTS: Variables and imports persist between code executions. You can reference previously defined variables.
+7. FINAL ANSWER: When you have the answer, you MUST call `<code>
 final_answer(result)
 </code>`. This is the ONLY way to complete the task. Anything else causes an infinite loop.
 

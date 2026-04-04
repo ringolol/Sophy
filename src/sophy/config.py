@@ -5,9 +5,12 @@ from dataclasses import dataclass, field
 
 import questionary
 
+from .ui import console
+from .paths import get_config_path
+
 
 DEFAULT_CONTEXT_WINDOW = 128000
-CONFIG_PATH = ".sophy/config.json"
+
 
 @dataclass
 class ModelPreset:
@@ -29,10 +32,13 @@ class GuardConfig:
 
 
 def load_guard_config() -> GuardConfig:
-    project_dir = os.path.dirname(os.path.abspath(CONFIG_PATH))
-    if not os.path.isfile(CONFIG_PATH):
+    config_path = get_config_path()
+    project_dir = os.path.dirname(os.path.abspath(config_path))
+    
+    if not os.path.isfile(config_path):
         return GuardConfig(project_dir=project_dir)
-    with open(CONFIG_PATH) as f:
+        
+    with open(config_path) as f:
         data = json.load(f)
     patterns = [re.compile(p) for p in data.get("allowed_command_patterns", [])]
     return GuardConfig(
@@ -60,9 +66,11 @@ def load_config() -> Config:
             return os.environ.get(value[1:], "")
         return value
 
-    if not os.path.isfile(CONFIG_PATH):
+    config_path = get_config_path()
+
+    if not os.path.isfile(config_path):
         return Config(models=[], custom_commands=[])
-    with open(CONFIG_PATH) as f:
+    with open(config_path) as f:
         data = json.load(f)
 
     models = [
@@ -94,6 +102,10 @@ def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> ModelP
         if "yandex" in api_base:
             return "Yandex"
         return "Ollama"
+
+    if not models:
+        console.print("[red]No Model Provided. Configure .sophy/config.json or use arguments to setup it.[/red]")
+        exit()
 
     choices = [
         questionary.Choice(title=p.label, value=p, description=f"\n    Provider: {provider(p.api_base)}\n    Tools: {p.tools}")

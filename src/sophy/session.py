@@ -11,9 +11,7 @@ import questionary
 
 from .ui import console
 from .factory import log_context_usage
-
-
-SESSIONS_DIR = ".sophy/sessions"
+from .paths import get_session_dir, get_all_session_dirs
 
 
 @dataclass
@@ -89,8 +87,9 @@ class Session:
             json.dump(self.to_dict(), f, indent=2)
 
     def save_auto(self):
-        os.makedirs(SESSIONS_DIR, exist_ok=True)
-        self.save(os.path.join(SESSIONS_DIR, f"{self.id}.json"))
+        sessions_dir = get_session_dir()
+        os.makedirs(sessions_dir, exist_ok=True)
+        self.save(os.path.join(sessions_dir, f"{self.id}.json"))
 
     @classmethod
     def load(cls, path: str) -> "Session":
@@ -100,26 +99,28 @@ class Session:
 
 def list_sessions() -> list[dict]:
     """Returns session metadata sorted by creation time (newest first)."""
-    if not os.path.isdir(SESSIONS_DIR):
-        return []
+    all_dirs = get_all_session_dirs()
     sessions = []
-    for fname in os.listdir(SESSIONS_DIR):
-        if not fname.endswith(".json"):
+    for sessions_dir in all_dirs:
+        if not os.path.isdir(sessions_dir):
             continue
-        path = os.path.join(SESSIONS_DIR, fname)
-        try:
-            with open(path) as f:
-                data = json.load(f)
-            first_task = data["entries"][0]["task"] if data.get("entries") else ""
-            sessions.append({
-                "id": data["id"],
-                "created_at": data["created_at"],
-                "entry_count": len(data.get("entries", [])),
-                "preview": first_task[:100].replace("\n", " ").rstrip('.') + '...',
-                "path": path,
-            })
-        except (json.JSONDecodeError, KeyError):
-            continue
+        for fname in os.listdir(sessions_dir):
+            if not fname.endswith(".json"):
+                continue
+            path = os.path.join(sessions_dir, fname)
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                first_task = data["entries"][0]["task"] if data.get("entries") else ""
+                sessions.append({
+                    "id": data["id"],
+                    "created_at": data["created_at"],
+                    "entry_count": len(data.get("entries", [])),
+                    "preview": first_task[:100].replace("\n", " ").rstrip('.') + '...',
+                    "path": path,
+                })
+            except (json.JSONDecodeError, KeyError):
+                continue
     sessions.sort(key=lambda s: s["created_at"], reverse=True)
     return sessions
 
