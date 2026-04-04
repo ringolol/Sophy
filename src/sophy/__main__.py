@@ -7,18 +7,18 @@ import traceback
 from prompt_toolkit import PromptSession
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.patch_stdout import patch_stdout
-from prompt_toolkit.application import get_app
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
 from smolagents.memory import ActionStep, Timing
 
+from .commands import CommandHandler, command_registry
 from .config import ModelPreset, pick_model, load_guard_config, load_config
 from .utils import parse_arguments
 from .guards import ToolDeniedException, set_guard_config
 from .ui import console, print_session_separator, set_main_loop
 from .debug import print_debug
-from .context_compression import maybe_compress, compress
+from .context_compression import maybe_compress
 from .session import Session, load_session, pick_session
 from .history_provider import set_history_provider
 from .factory import log_context_usage, make_model, make_solver_agent, make_explorer_agent
@@ -105,6 +105,12 @@ async def async_agent_loop():
     completer = WordCompleter(commands_list, ignore_case=True, sentence=True)
     prompt_session = PromptSession(key_bindings=bindings)
 
+    # command handler
+    async def prompt_fn(prompt_text):
+        return await prompt_session.prompt_async(prompt_text, multiline=True, completer=completer, complete_while_typing=True)
+
+    command_handler = CommandHandler(solver_agent, session_holder, solver_preset, available_presets, explorer_agent, custom_commands=custom_commands, prompt_fn=prompt_fn)
+
     # keyboard interrupt thread logic
     agent_thread_id = None
 
@@ -183,101 +189,24 @@ async def async_agent_loop():
             if is_solver_busy.is_set():
                 interrupt_agent()
             else:
-                exit()
+                exit(0)
             continue
 
         # commands
-        if task == "?":
-            console.print("Commands:")
-            commands = [
-                "/quit - exit",
-                "/resume - switch sessions",
-                "/new - create a new session",
-                "/model - switch model",
-                "/compress - compress context",
-                "/pure <prompt> - run without system prompt",
-                "/fork - fork session"
-            ]
-            for cmd in commands:
-                console.print(f"  {cmd}")
-
-            if custom_commands:
-                console.print("\nCustom commands:")
-                prompt_limit = 100
-                for cmd in custom_commands:
-                    prompt_text = (cmd.prompt[:prompt_limit] + '...') if len(cmd.prompt) > prompt_limit else cmd.prompt
-                    console.print(f"  {cmd.command} ➔ {prompt_text}")
-
-            console.print("\nCtrl+C to stop execution")
-            continue
-        if task == "/quit":
-            if session_holder[0].entries:
-                session_holder[0].save_auto()
-                console.print(f"[green]Session {session_holder[0].id} saved.[/green]")
-            break
-        if task == "/new":
-            if session_holder[0].entries:
-                session_holder[0].save_auto()
-            session_holder[0] = Session()
-            solver_agent.memory.reset()
-            console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
-            print_footer()
-            continue
-        if task == "/fork":
-            if session_holder[0].entries:
-                session_holder[0].save_auto()
-
-            new_session = Session(entries=list(session_holder[0].entries), is_forked=True)
-            session_holder[0] = new_session
-
-            console.print(f"[dim][bold]Session forked to:[/bold] {session_holder[0].id}[/dim]")
-            print_footer()
-            continue
-        if task == "/compress":
-            compress(solver_agent, session_holder)
-            print_footer()
-            continue
-        if task == "/resume":
-            if session_holder[0].entries:
-                session_holder[0].save_auto()
-            session_holder[0] = await pick_session()
-            console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
-            load_session(solver_agent, session_holder[0])
-            print_footer()
-            continue
-        if task == "/model":
-            def switch_model(preset: ModelPreset):
-                nonlocal solver_preset, solver_agent, explorer_agent, explorer_model
-                if preset == solver_preset:
-                    return
-                solver_preset = preset
-                new_model = make_model(preset)
-
-                solver_agent = make_solver_agent(preset, new_model, explorer_agent)
-                load_session(solver_agent, session_holder[0], print_history=False)
-                console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]")
-            switch_model(await pick_model(available_presets, default=solver_preset))
-            print_footer()
-            continue
-
         inject_system_prompt = True
-        if task == "/pure":
-            inject_system_prompt = False
-            try:
-                task = await prompt_session.prompt_async(
-                    "❯ [PURE] ",
-                    multiline=True,
-                    completer=completer,
-                    complete_while_typing=True
-                )
-                task = task.strip()
-            except KeyboardInterrupt:
+        if task in command_registry.commands:
+            result = await command_handler.handle_command(task)
+            solver_agent = command_handler.solver_agent
+            solver_preset = command_handler.solver_preset
+            if result.consumed:
                 continue
+            task = result.task
+            inject_system_prompt = result.inject_system_prompt
 
-        for cmd in custom_commands:
-            if task == cmd.command:
-                task = cmd.prompt
-                print_debug(task)
+        # custom commands
+        resolved = command_handler.resolve_custom_command(task)
+        if resolved:
+            task = resolved
 
         if not task:
             continue
@@ -292,4 +221,4 @@ def main():
         asyncio.run(async_agent_loop())
     except KeyboardInterrupt:
         console.print("\n[dim]cya![/dim]")
-        exit()
+        exit(0)

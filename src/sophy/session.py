@@ -170,7 +170,7 @@ async def pick_session() -> Session:
     # questionary returns None on Ctrl+C or Esc
     if selected is None:
         console.print("[dim]Aborted.[/dim]")
-        exit()
+        exit(0)
 
     if selected == "NEW_SESSION":
         return Session()

@@ -106,7 +106,7 @@ async def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> 
 
     if not models:
         console.print("[red]No Model Provided. Configure .sophy/config.json or use arguments to setup it.[/red]")
-        exit()
+        exit(1)
 
     choices = [
         questionary.Choice(title=p.label, value=p, description=f"\n    Provider: {provider(p.api_base)}\n    Tools: {p.tools}")
@@ -139,4 +139,4 @@ async def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> 
     if choice:
         return choice
 
-    exit()
+    exit(1)
