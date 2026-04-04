@@ -10,6 +10,11 @@ from .debug import print_debug
 console = Console()
 
 
+def print_session_separator():
+    console.rule(style="dim")
+    console.print()
+
+
 def _print_diff(old_lines, new_lines, path) -> bool:
     """Print a colored unified diff with 3 lines of context."""
     diff = list(difflib.unified_diff(

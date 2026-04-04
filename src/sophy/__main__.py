@@ -9,7 +9,7 @@ from smolagents.memory import ActionStep
 from .config import ModelPreset, pick_model, load_guard_config, load_config
 from .utils import parse_arguments
 from .guards import ToolDeniedException, set_guard_config
-from .ui import console
+from .ui import console, print_session_separator
 from .debug import print_debug
 from .context_compression import maybe_compress, compress
 from .session import Session, load_session, pick_session
@@ -52,9 +52,9 @@ def agent_loop():
         new_model = make_model(preset)
 
         solver_agent = make_solver_agent(preset, new_model, explorer_agent)
-        load_session(solver_agent, session_holder[0])
+        load_session(solver_agent, session_holder[0], print_history=False)
         console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
-        console.rule(style="dim")
+        print_session_separator()
 
     print_debug(f'[dim]{solver_agent.system_prompt}[/dim]')
     session_holder[0] = pick_session()
@@ -62,8 +62,7 @@ def agent_loop():
     console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
     console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /model to switch model, /compress to compress context. Ctrl+C to stop execution")
     load_session(solver_agent, session_holder[0])
-    console.rule(style="dim")
-    console.print()
+    print_session_separator()
 
     bindings = KeyBindings()
 
@@ -107,6 +106,7 @@ def agent_loop():
             session_holder[0] = Session()
             solver_agent.memory.reset()
             console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]\n")
+            print_session_separator()
             continue
         if task == "/compress":
             compress(solver_agent, session_holder)
@@ -118,6 +118,7 @@ def agent_loop():
             session_holder[0] = pick_session()
             console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]\n")
             load_session(solver_agent, session_holder[0])
+            print_session_separator()
             continue
         if task == "/model":
             switch_model(pick_model(available_presets))

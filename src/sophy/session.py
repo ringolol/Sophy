@@ -124,11 +124,13 @@ def list_sessions() -> list[dict]:
     return sessions
 
 
-def load_session(agent, s: Session):
+def load_session(agent, s: Session, print_history=True):
     """Print session history and restore agent memory."""
     if s.entries:
         restore_memory(agent, s)
 
+        if not print_history:
+            return
         console.rule(f"[bold cyan]Session History ({len(s.entries)} entries)[/bold cyan]")
         for entry in s.entries:
             console.print(Panel(entry.task, title="[bold green]You[/bold green]", title_align="left", border_style="green", padding=(0, 1)))
