@@ -1,12 +1,8 @@
-import difflib
 import functools
 import os
 import re
-from rich.console import Console
-from rich.syntax import Syntax
-from rich.panel import Panel
 
-from .ui import console, _PREVIEWERS, _print_diff
+from .ui import console
 
 
 _guard_config = None

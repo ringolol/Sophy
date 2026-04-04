@@ -1,6 +1,6 @@
 import typing
 
-from .config import ModelPreset, load_config
+from .config import ModelPreset
 from .ui import console
 from .utils import MAX_AGENT_STEPS, remind_final_answer
 from smolagents import LogLevel

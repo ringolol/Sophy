@@ -64,7 +64,7 @@ def load_config() -> Config:
         return Config(models=[], custom_commands=[])
     with open(CONFIG_PATH) as f:
         data = json.load(f)
-    
+
     models = [
         ModelPreset(
             model_id=m["model_id"],
@@ -78,12 +78,12 @@ def load_config() -> Config:
         )
         for m in data.get("models", [])
     ]
-    
+
     custom_commands = [
         CustomCommand(command=c["command"], prompt=c["prompt"])
         for c in data.get("custom_commands", [])
     ]
-    
+
     return Config(models=models, custom_commands=custom_commands)
 
 

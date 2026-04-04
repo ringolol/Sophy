@@ -99,6 +99,7 @@ def final_preview(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         console.print(Syntax(result, "markdown", theme='monokai', word_wrap=True))
+        console.print()
         return result
     return wrapper
 
