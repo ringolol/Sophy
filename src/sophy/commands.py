@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
-from .ui import console, print_session_separator
+from .ui import console, print_footer
 from .session import Session, load_session, pick_session
-from .factory import make_solver_agent, make_model, log_context_usage
+from .factory import make_solver_agent, make_model
 from .config import pick_model
 from .context_compression import compress
 from .debug import print_debug
@@ -45,9 +45,8 @@ class CommandHandler:
         self.prompt_fn = prompt_fn
         self._register_custom_commands()
 
-    def print_footer(self):
-        log_context_usage(None, self.solver_agent)
-        print_session_separator()
+    def _print_footer(self):
+        print_footer(self.solver_agent)
 
     def _register_custom_commands(self):
         for cmd in self.custom_commands:
@@ -70,6 +69,14 @@ class CommandHandler:
         return CommandResult(consumed=True)
 
 
+@command_registry.add(cmd="?", description="show this help")
+async def help_handler(handler: CommandHandler):
+    console.print("Commands:")
+    for cmd in command_registry.commands.values():
+        console.print(f"  {cmd.cmd} - {cmd.description}")
+    console.print("\nCtrl+C to stop execution")
+
+
 @command_registry.add(cmd="/quit", description="exit")
 async def quit_handler(handler: CommandHandler):
     if handler.session_holder[0].entries:
@@ -85,7 +92,7 @@ async def new_handler(handler: CommandHandler):
     handler.session_holder[0] = Session()
     handler.solver_agent.memory.reset()
     console.print(f"[dim][bold]Session:[/bold] {handler.session_holder[0].id}[/dim]")
-    handler.print_footer()
+    handler._print_footer()
 
 
 @command_registry.add(cmd="/fork", description="fork session")
@@ -95,13 +102,13 @@ async def fork_handler(handler: CommandHandler):
     new_session = Session(entries=list(handler.session_holder[0].entries), is_forked=True)
     handler.session_holder[0] = new_session
     console.print(f"[dim][bold]Session forked to:[/bold] {handler.session_holder[0].id}[/dim]")
-    handler.print_footer()
+    handler._print_footer()
 
 
 @command_registry.add(cmd="/compress", description="compress context")
 async def compress_handler(handler: CommandHandler):
     compress(handler.solver_agent, handler.session_holder)
-    handler.print_footer()
+    handler._print_footer()
 
 
 @command_registry.add(cmd="/resume", description="switch sessions")
@@ -111,7 +118,7 @@ async def resume_handler(handler: CommandHandler):
     handler.session_holder[0] = await pick_session()
     console.print(f"[dim][bold]Session:[/bold] {handler.session_holder[0].id}[/dim]")
     load_session(handler.solver_agent, handler.session_holder[0])
-    handler.print_footer()
+    handler._print_footer()
 
 
 @command_registry.add(cmd="/model", description="switch model")
@@ -123,15 +130,7 @@ async def model_handler(handler: CommandHandler):
         handler.solver_agent = make_solver_agent(preset, new_model, handler.explorer_agent)
         load_session(handler.solver_agent, handler.session_holder[0], print_history=False)
         console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]")
-    handler.print_footer()
-
-
-@command_registry.add(cmd="?", description="show this help")
-async def help_handler(handler: CommandHandler):
-    console.print("Commands:")
-    for cmd in command_registry.commands.values():
-        console.print(f"  {cmd.cmd} - {cmd.description}")
-    console.print("\nCtrl+C to stop execution")
+    handler._print_footer()
 
 
 @command_registry.add(cmd="/pure", description="send prompt without system prompt injection")

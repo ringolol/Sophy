@@ -38,6 +38,31 @@ def print_session_separator():
     console.rule(style="dim")
 
 
+def log_context_usage(step_log, agent):
+    # Try to get token usage from the latest step
+    if agent.memory.steps and hasattr(agent.memory.steps[-1], "token_usage") and agent.memory.steps[-1].token_usage:
+        input_tokens = agent.memory.steps[-1].token_usage.input_tokens
+        context_window = agent.model.context_window
+        if input_tokens and context_window:
+            usage_ratio = input_tokens / context_window
+            color = "green"
+            if usage_ratio > 1:
+                color = "red"
+            elif usage_ratio > 0.8:
+                color = "yellow"
+            bar_length = 10
+            filled_length = int(bar_length * usage_ratio)
+            bar = "█" * filled_length + "░" * (bar_length - filled_length)
+            console.print(
+                f"[dim]Context usage: [{color}]{bar} {usage_ratio:.0%}[/{color}][/dim]"
+            )
+
+
+def print_footer(agent):
+    log_context_usage(None, agent)
+    print_session_separator()
+
+
 def _print_diff(old_lines, new_lines, path) -> bool:
     """Print a colored unified diff with 3 lines of context."""
     diff = list(difflib.unified_diff(

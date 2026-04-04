@@ -11,7 +11,6 @@ from smolagents.monitoring import Timing, TokenUsage
 import questionary
 
 from .ui import console
-from .factory import log_context_usage
 from .paths import get_user_session_dir
 
 
