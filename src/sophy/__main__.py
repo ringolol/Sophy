@@ -62,7 +62,7 @@ def agent_loop():
     session_holder[0] = pick_session()
     console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
     console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
-    console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /model to switch model, /compress to compress context. Ctrl+C to stop execution")
+    console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /model to switch model, /compress to compress context, /pure <prompt> to run without system prompt. Ctrl+C to stop execution")
     load_session(solver_agent, session_holder[0])
     print_session_separator()
 
@@ -76,7 +76,7 @@ def agent_loop():
     def _(event):
         event.current_buffer.newline()
 
-    commands = ['/quit', '/new', '/fork', '/compress', '/resume', '/model'] + [c.command for c in custom_commands]
+    commands = ['/quit', '/new', '/fork', '/compress', '/resume', '/model', '/pure'] + [c.command for c in custom_commands]
     completer = WordCompleter(commands, ignore_case=True, sentence=True)
 
     while True:
@@ -92,8 +92,6 @@ def agent_loop():
         except KeyboardInterrupt:
             console.print("[dim]cya[/dim]")
             exit()
-        if not task:
-            continue
 
         if task == "/quit":
             if session.entries:
@@ -111,16 +109,16 @@ def agent_loop():
         if task == "/fork":
             if session.entries:
                 session.save_auto()
-            
+
             # Create a new session and copy the entries from the current one
             new_session = Session(entries=list(session.entries), is_forked=True)
             session_holder[0] = new_session
-            
-            # The memory is already restored in solver_agent due to load_session(solver_agent, session) 
-            # happening before or during the loop, but we should ensure the agent's memory 
+
+            # The memory is already restored in solver_agent due to load_session(solver_agent, session)
+            # happening before or during the loop, but we should ensure the agent's memory
             # matches the new session (which is a copy of the old one anyway).
             # The solver_agent's memory is already at the state of the current session entries.
-            
+
             console.print(f"[dim][bold]Session forked to:[/bold] {session_holder[0].id}[/dim]\n")
             print_session_separator()
             continue
@@ -139,6 +137,22 @@ def agent_loop():
             switch_model(pick_model(available_presets, default=solver_preset))
             continue
 
+        inject_system_prompt = True
+        if task == "/pure":
+            try:
+                task = prompt("❯ [pure mode] ", multiline=True, key_bindings=bindings).strip()
+            except KeyboardInterrupt:
+                continue
+        inject_system_prompt = False
+
+        # inject_system_prompt = True
+        # if task.startswith("/pure "):
+        #     task = task[len("/pure "):].strip()
+        #     inject_system_prompt = False
+
+        if not task:
+            continue
+
         for cmd in custom_commands:
             if task == cmd.command:
                 task = cmd.prompt
@@ -146,7 +160,9 @@ def agent_loop():
 
         try:
             maybe_compress(solver_agent, session_holder, solver_preset)
-            result = solver_agent.run(task, reset=False)
+            if not inject_system_prompt:
+                console.print("[dim]running task without system prompt injection.[/dim]")
+            result = solver_agent.run(task, reset=False, inject_system_prompt=inject_system_prompt)
             log_context_usage(_, solver_agent)
             session = session_holder[0]
 

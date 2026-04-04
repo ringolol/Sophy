@@ -2,11 +2,11 @@
 
 ### [done] ~/.sophy
 
-### /fork
+### [done] /fork
+
+### [done] /pure (no prompt injection)
 
 ### /btw
-
-### /pure (no prompt injection)
 
 ### custom commands arguments
 
