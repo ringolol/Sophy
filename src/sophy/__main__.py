@@ -1,4 +1,6 @@
 import asyncio
+import ctypes
+import threading
 import time
 import traceback
 
@@ -50,11 +52,11 @@ async def async_agent_loop():
     set_main_loop(asyncio.get_running_loop())
     args = parse_arguments()
     config = load_config()
+
     custom_models = []
     if args.model and args.api_base and args.api_key:
         custom_models.append(ModelPreset(args.model, args.api_base, args.api_key, "Custom"))
     available_presets = custom_models + config.models
-    custom_commands = config.custom_commands
     solver_preset = await pick_model(available_presets)
 
     available_explorer_presets = [p for p in available_presets if p.explorer]
@@ -84,12 +86,14 @@ async def async_agent_loop():
     console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
     console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
 
+    custom_commands = config.custom_commands
     commands_list = ["?", "/quit", "/resume", "/new", "/model", "/compress", "/pure", "/fork"] + [c.command for c in custom_commands]
     console.print(f"Commands: {', '.join(commands_list[1:])}\nType ? for details")
 
     load_session(solver_agent, session_holder[0])
     print_session_separator()
 
+    # prompt configurations
     bindings = KeyBindings()
 
     @bindings.add('enter', filter=is_not_busy)
@@ -101,7 +105,26 @@ async def async_agent_loop():
         event.current_buffer.newline()
 
     completer = WordCompleter(commands_list, ignore_case=True, sentence=True)
-    session = PromptSession(key_bindings=bindings)
+    prompt_session = PromptSession(key_bindings=bindings)
+
+    # keyboard interrupt thread logic
+    agent_thread_id = None
+
+    def run_agent_sync(task, reset, inject_system_prompt):
+        nonlocal agent_thread_id
+        agent_thread_id = threading.current_thread().ident
+        try:
+            return solver_agent.run(task, reset=reset, inject_system_prompt=inject_system_prompt)
+        finally:
+            agent_thread_id = None
+
+    def interrupt_agent():
+        nonlocal agent_thread_id
+        if agent_thread_id is not None:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                ctypes.c_ulong(agent_thread_id),
+                ctypes.py_object(KeyboardInterrupt),
+            )
 
     async def run_agent(task, inject_system_prompt):
         is_busy.set()
@@ -111,8 +134,7 @@ async def async_agent_loop():
             if not inject_system_prompt:
                 console.print("[dim]running task without system prompt injection.[/dim]")
 
-            # Use run_in_executor/to_thread to keep UI alive
-            result = await asyncio.to_thread(solver_agent.run, task, reset=False, inject_system_prompt=inject_system_prompt)
+            result = await asyncio.to_thread(run_agent_sync, task, False, inject_system_prompt)
 
             log_context_usage(_, solver_agent)
 
@@ -148,18 +170,23 @@ async def async_agent_loop():
             is_busy.clear()
             refresh_ui()
             session_holder[0].save_auto()
+            print_session_separator()
 
     while True:
-        with patch_stdout(raw=True):
-            task = await session.prompt_async(
-                get_prompt_decor,
-                multiline=True,
-                completer=completer,
-                complete_while_typing=True
-            )
-            task = task.strip()
-
-        if not task:
+        try:
+            with patch_stdout(raw=True):
+                task = await prompt_session.prompt_async(
+                    get_prompt_decor,
+                    multiline=True,
+                    completer=completer,
+                    complete_while_typing=True
+                )
+                task = task.strip()
+        except KeyboardInterrupt:
+            if is_busy.is_set():
+                interrupt_agent()
+            else:
+                exit()
             continue
 
         if task == "?":
@@ -227,9 +254,18 @@ async def async_agent_loop():
             continue
 
         inject_system_prompt = True
-        if task.startswith("/pure"):
+        if task == "/pure":
             inject_system_prompt = False
-            task = task.replace("/pure", "").strip()
+            try:
+                task = await prompt_session.prompt_async(
+                    "❯ [PURE] ",
+                    multiline=True,
+                    completer=completer,
+                    complete_while_typing=True
+                )
+                task = task.strip()
+            except KeyboardInterrupt:
+                continue
 
         if not task:
             continue
@@ -244,17 +280,7 @@ async def async_agent_loop():
 
 def main():
     try:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            # If a loop is already running, we can't use asyncio.run()
-            # We just create a task in the current loop
-            loop.create_task(async_agent_loop())
-        else:
-            asyncio.run(async_agent_loop())
+        asyncio.run(async_agent_loop())
     except KeyboardInterrupt:
         console.print("\n[dim]cya![/dim]")
         exit()

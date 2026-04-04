@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import functools
 import difflib
 
@@ -25,6 +26,9 @@ def prompt_in_terminal(question: str) -> str:
         return input(question)
 
     async def _run():
+        import sys
+        sys.stdout.flush()
+        await asyncio.sleep(0.25)
         return await run_in_terminal(_ask, in_executor=False)
 
     future = asyncio.run_coroutine_threadsafe(_run(), _main_loop)
