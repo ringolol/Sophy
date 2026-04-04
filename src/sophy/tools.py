@@ -13,18 +13,11 @@ from prompt_toolkit.key_binding import KeyBindings
 
 from .guards import confirm, path_expand
 from .ui import command_preview, final_preview, patch_tool
+from .history_provider import get_history_provider
 
-
-_history_provider = None
 
 # supress tools' warnings
 warnings.filterwarnings("ignore")
-
-
-def set_history_provider(fn):
-    """Register a callback that returns conversation summary text."""
-    global _history_provider
-    _history_provider = fn
 
 
 @tool
@@ -35,9 +28,10 @@ def get_conversation_history(last_n: int = 5) -> str:
     Args:
         last_n: Number of recent conversations to return. Defaults to 5.
     """
-    if _history_provider is None:
+    history_provider = get_history_provider()
+    if history_provider is None:
         return "No history provider configured."
-    return _history_provider(last_n)
+    return history_provider(last_n)
 
 @tool
 @path_expand

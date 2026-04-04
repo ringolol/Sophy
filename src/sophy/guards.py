@@ -53,8 +53,6 @@ def confirm(fn):
     def guarded_fn(*args, **kwargs):
         auto = _can_auto_approve(fn.__name__, kwargs)
 
-        console.print()
-        console.rule(f"[bold yellow]Agent wants to run: {fn.__name__}[/bold yellow]")
         previewer = _PREVIEWERS.get(fn.__name__)
         if previewer:
             old_lines, new_lines, path = previewer(kwargs)
@@ -65,10 +63,11 @@ def confirm(fn):
                     return dummy
 
         if auto:
+            result = fn(*args, **kwargs)
             console.print("[dim][green](auto-approved)[/green][/dim]")
-            return fn(*args, **kwargs)
+            return result
 
-        while (answer := input("Allow? [y/n]: ").strip().lower()) not in ("y", "n"):
+        while (answer := console.input("[cyan]Allow?[/cyan] \[y/n]: ").strip().lower()) not in ("y", "n"):
             print("\033[A\033[2K", end="", flush=True)
         print("\033[A\033[2K", end="", flush=True)
         if answer != "y":

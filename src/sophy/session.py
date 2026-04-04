@@ -10,9 +10,12 @@ from smolagents.monitoring import Timing, TokenUsage
 import questionary
 
 from .ui import console
+from .factory import log_context_usage
 
 
 SESSIONS_DIR = ".sophy/sessions"
+
+
 @dataclass
 class ConversationEntry:
     task: str
@@ -124,13 +127,16 @@ def list_sessions() -> list[dict]:
 def load_session(agent, s: Session):
     """Print session history and restore agent memory."""
     if s.entries:
+        restore_memory(agent, s)
+
         console.rule(f"[bold cyan]Session History ({len(s.entries)} entries)[/bold cyan]")
         for entry in s.entries:
             console.print(Panel(entry.task, title="[bold green]You[/bold green]", title_align="left", border_style="green", padding=(0, 1)))
             console.print(Panel(entry.result, title="[bold yellow]Agent[/bold yellow]", title_align="left", border_style="yellow", padding=(0, 1)))
+        log_context_usage(None, agent)
         console.rule(style="dim")
         console.print()
-        restore_memory(agent, s)
+
 
 
 def pick_session() -> Session:

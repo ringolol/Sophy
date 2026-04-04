@@ -6,6 +6,8 @@ from rich.text import Text
 from smolagents import LogLevel
 from smolagents.monitoring import YELLOW_HEX
 
+from .ui import console
+
 
 class CustomToolCallingAgent(ToolCallingAgent):
    def _run_stream(
@@ -45,6 +47,7 @@ class CustomToolCallingAgent(ToolCallingAgent):
                 observations_images=images,
             )
             # self.logger.log_rule(f"Step {self.step_number}", level=LogLevel.INFO)
+            console.rule(style="dim")
             try:
                 for output in self._step_stream(action_step):
                     # Yield all
@@ -120,6 +123,8 @@ class CustomCodeAgent(CodeAgent):
                 observations_images=images,
             )
             # self.logger.log_rule(f"Step {self.step_number}", level=LogLevel.INFO)
+            console.rule(style="dim")
+
             try:
                 for output in self._step_stream(action_step):
                     # Yield all
