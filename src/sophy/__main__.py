@@ -75,13 +75,6 @@ async def async_agent_loop():
         console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
     print_header()
 
-    # commands
-    custom_commands = config.custom_commands
-    commands_list = ["?", "/quit", "/resume", "/new", "/model", "/compress", "/pure", "/fork"] + [c.command for c in custom_commands]
-
-    # print commands
-    console.print(f"Commands: {', '.join(commands_list[1:])}\nType ? for details")
-
     # load sessions
     load_session(solver_agent, session_holder[0])
 
@@ -102,14 +95,21 @@ async def async_agent_loop():
     def _(event):
         event.current_buffer.newline()
 
-    completer = WordCompleter(commands_list, ignore_case=True, sentence=True)
-    prompt_session = PromptSession(key_bindings=bindings)
+    # command handler (registers custom commands into the registry)
+    custom_commands = config.custom_commands
 
-    # command handler
     async def prompt_fn(prompt_text):
         return await prompt_session.prompt_async(prompt_text, multiline=True, completer=completer, complete_while_typing=True)
 
     command_handler = CommandHandler(solver_agent, session_holder, solver_preset, available_presets, explorer_agent, custom_commands=custom_commands, prompt_fn=prompt_fn)
+
+    commands_list = list(command_registry.commands.keys())
+    slash_commands = [c for c in commands_list if c != "?"]
+    console.print(f"Commands: {', '.join(slash_commands)}\nType ? for details")
+
+    # prompt configurations
+    completer = WordCompleter(commands_list, ignore_case=True, sentence=True)
+    prompt_session = PromptSession(key_bindings=bindings)
 
     # keyboard interrupt thread logic
     agent_thread_id = None
@@ -173,10 +173,8 @@ async def async_agent_loop():
             session_holder[0].save_auto()
             print_footer()
 
-    # main loop
     while True:
         try:
-            # user prompt
             with patch_stdout(raw=True):
                 task = await prompt_session.prompt_async(
                     get_prompt_decor,
@@ -192,7 +190,6 @@ async def async_agent_loop():
                 exit(0)
             continue
 
-        # commands
         inject_system_prompt = True
         if task in command_registry.commands:
             result = await command_handler.handle_command(task)
@@ -202,11 +199,6 @@ async def async_agent_loop():
                 continue
             task = result.task
             inject_system_prompt = result.inject_system_prompt
-
-        # custom commands
-        resolved = command_handler.resolve_custom_command(task)
-        if resolved:
-            task = resolved
 
         if not task:
             continue

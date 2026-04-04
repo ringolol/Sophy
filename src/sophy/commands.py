@@ -43,23 +43,31 @@ class CommandHandler:
         self.explorer_agent = explorer_agent
         self.custom_commands = custom_commands or []
         self.prompt_fn = prompt_fn
+        self._register_custom_commands()
 
     def print_footer(self):
         log_context_usage(None, self.solver_agent)
         print_session_separator()
 
-    def resolve_custom_command(self, task: str) -> Optional[str]:
+    def _register_custom_commands(self):
         for cmd in self.custom_commands:
-            if task == cmd.command:
-                print_debug(cmd.prompt)
-                return cmd.prompt
-        return None
+            prompt = cmd.prompt
+
+            async def handler(handler, prompt=prompt):
+                print_debug(prompt)
+                return CommandResult(consumed=False, task=prompt)
+
+            command_registry.commands[cmd.command] = Command(
+                cmd=cmd.command,
+                description=f"custom: {cmd.prompt[:50]}{'...' if len(cmd.prompt) > 50 else ''}",
+                handler=handler,
+            )
 
     async def handle_command(self, command_str) -> CommandResult:
         if command_str in command_registry.commands:
             result = await command_registry.commands[command_str].handler(self)
-            return result if isinstance(result, CommandResult) else CommandResult()
-        return CommandResult()
+            return result if isinstance(result, CommandResult) else CommandResult(consumed=True)
+        return CommandResult(consumed=True)
 
 
 @command_registry.add(cmd="/quit", description="exit")
@@ -123,12 +131,6 @@ async def help_handler(handler: CommandHandler):
     console.print("Commands:")
     for cmd in command_registry.commands.values():
         console.print(f"  {cmd.cmd} - {cmd.description}")
-    if handler.custom_commands:
-        console.print("\nCustom commands:")
-        prompt_limit = 100
-        for cmd in handler.custom_commands:
-            prompt_text = (cmd.prompt[:prompt_limit] + '...') if len(cmd.prompt) > prompt_limit else cmd.prompt
-            console.print(f"  {cmd.command} ➔ {prompt_text}")
     console.print("\nCtrl+C to stop execution")
 
 

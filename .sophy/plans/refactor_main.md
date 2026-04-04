@@ -5,18 +5,17 @@ The `__main__.py` file has grown significantly and handles too many responsibili
 
 ## Proposed Changes
 
-1. **Modularize Commands (`commands.py`)**
+1. [DONE] **Modularize Commands (`commands.py`)**
    - Create `src/sophy/commands.py`.
    - Define a registry or a dispatch map for command handlers.
    - Replace the `if/elif` chain in the main loop with calls to these handlers.
 
 2. **Refactor `async_agent_loop`**
    - Extract logic into smaller, dedicated functions:
-     - `initialize_agents()`
-     - `initialize_session()`
-     - `setup_keybindings()`
-     - `run_agent_task()`
-     - `process_command()`
+     - `initialize_agents()` (presets, models, agents)
+     - `configure_prompt()` (prompt configurations)
+     - `configure_command_handler` (command handler)
+     - move `run_agent` outside with its support function (run_agent_sync, interrupt_agent)
    - Move initialization logic out of the main loop.
 
 3. **Improve State Management**
