@@ -12,7 +12,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 
 from .guards import confirm, path_expand
-from .ui import command_preview, final_output, patch_tool
+from .ui import command_preview, final_preview, patch_tool
 
 
 _history_provider = None
@@ -192,7 +192,6 @@ def edit_file(file_path: str, old_content: str, new_content: str) -> str:
 
 
 @tool
-@command_preview
 def ask_user(question: str) -> str:
     """Do not hesitate to use it for clarification, confirmation, or additional information from User!
 
@@ -351,9 +350,10 @@ def execute_python(code: str) -> str:
         result = PythonInterpreterTool(timeout_seconds=5*60).forward(code)
         return result
     except InterpreterError:
-        # Fallback to safe Python interpreter
         return dangerous_python_interpreter(code)
 
+
+# Sub Agents
 
 @tool
 @command_preview
@@ -366,6 +366,7 @@ def explorer(task: str) -> str:
     return ""
 
 
+# Default Tools
 web_search = DuckDuckGoSearchTool()
 patch_tool(web_search, command_preview)
 web_search.description = "DuckDuckGo search."
@@ -373,8 +374,9 @@ visit_webpage = VisitWebpageTool()
 patch_tool(visit_webpage, command_preview)
 visit_webpage.description = "Reads a URL as markdown."
 final_answer = FinalAnswerTool()
-patch_tool(final_answer, final_output)
+patch_tool(final_answer, final_preview)
 final_answer.description = "Returns your final answer."
+
 
 EXPLORATION_TOOLS = [
     read_file,

@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from rich.panel import Panel
 
-from .ui import console
+from .ui import console, _PREVIEWERS, _print_diff
 
 
 _guard_config = None
@@ -22,49 +22,6 @@ def set_guard_config(config):
 class ToolDeniedException(BaseException):
     pass
 
-def _print_diff(old_lines, new_lines, path) -> bool:
-    """Print a colored unified diff with 3 lines of context."""
-    diff = list(difflib.unified_diff(
-        old_lines, new_lines,
-        fromfile=f"a/{path}", tofile=f"b/{path}",
-        n=3,
-    ))
-    if not diff:
-        console.print("[dim](no changes)[/dim]")
-        return False
-    diff_text = "".join(diff)
-    console.print(Syntax(diff_text, "diff", theme="monokai", word_wrap=True))
-    return True
-
-def _preview_edit(kwargs):
-    """Build old/new lines for an edit_file call."""
-    path = kwargs.get("file_path", "")
-    old_content = kwargs.get("old_content", "")
-    new_content = kwargs.get("new_content", "")
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            original = f.read()
-    except FileNotFoundError:
-        return None, None, path
-    new_file = original.replace(old_content, new_content, 1)
-    return original.splitlines(keepends=True), new_file.splitlines(keepends=True), path
-
-
-def _preview_write(kwargs):
-    """Build old/new lines for a write_new_file call."""
-    path = kwargs.get("file_path", "")
-    content = kwargs.get("content", "")
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            old_lines = f.readlines()
-    except FileNotFoundError:
-        old_lines = []
-    return old_lines, content.splitlines(keepends=True), path
-
-_PREVIEWERS = {
-    "edit_file": _preview_edit,
-    "write_new_file": _preview_write,
-}
 
 def _can_auto_approve(fn_name, kwargs):
     """Check if this call can be auto-approved based on guard config."""
@@ -106,10 +63,6 @@ def confirm(fn):
                     def dummy(*args, **kwargs):
                         return "File have NOT been changed. Try again!"
                     return dummy
-            else:
-                console.print(f"[green](new file: {path})[/green]")
-        else:
-            console.print(Panel(str(kwargs), title="Args", border_style="dim"))
 
         if auto:
             console.print("[dim][green](auto-approved)[/green][/dim]")
