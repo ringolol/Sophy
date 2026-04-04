@@ -28,11 +28,7 @@ def summarize_context(agent) -> str:
     messages = agent.write_memory_to_messages(summary_mode=True)
 
     summary_messages = [
-        ChatMessage(role=MessageRole.SYSTEM, content=[{"type": "text", "text": SUMMARIZATION_PROMPT}]),
-        ChatMessage(
-            role=MessageRole.USER,
-            content=[{"type": "text", "text": _format_messages_for_summary(messages)}],
-        ),
+        ChatMessage(role=MessageRole.USER, content=[{"type": "text", "text": SUMMARIZATION_PROMPT}]),
     ]
 
     response = agent.model.generate(summary_messages)

@@ -1,13 +1,12 @@
 import ctypes
 import threading
 from dataclasses import dataclass
-from typing import Any
 
 from smolagents.agents import MultiStepAgent
 
 from .config import Config, ModelPreset, pick_model, load_config
 from .debug import print_debug
-from .factory import make_model, make_solver_agent, make_explorer_agent
+from .agent_factory import make_model, make_solver_agent, make_explorer_agent
 from .utils import parse_arguments
 
 

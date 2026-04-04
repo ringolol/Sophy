@@ -18,6 +18,6 @@ def init_app() -> AppState:
     set_guard_config(load_guard_config())
 
     state = AppState()
-    set_history_provider(lambda: state.session.get_summary())
+    set_history_provider(lambda *args, **kwargs: state.session.get_summary(*args, **kwargs))
 
     return state

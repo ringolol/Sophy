@@ -8,10 +8,12 @@ Sophy is a coding agent harness. It implements a tool-call loop in which agent s
 
 ## Main Python Files (src/sophy/)
 - Main entry point: __main__.py
+- Application state management: app_state.py
+- Configuration management: config.py
+- Agent instantiation: agents.py, agent_factory.py
 - Agents' tools: tools.py
 - Agents' prompts: prompts.py, prompts_data/
-- Agents' instantiation factory: factory.py
+- User command handling: commands.py
 - Session manager: session.py, history_provider.py
 - Customizations to smolagents: patched_model.py, patched_agents.py, smolagents_patches.py
-- Configuration management: config.py
-- Utils & Co: utils.py, guards.py, ui.py
+- Utils & Co: utils.py, guards.py, ui.py, debug.py, paths.py, cli.py

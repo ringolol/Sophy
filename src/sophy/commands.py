@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, Dict, Optional
 from .ui import console, print_footer
 from .session import Session, load_session, pick_session
-from .factory import make_solver_agent, make_model
+from .agent_factory import make_solver_agent, make_model
 from .config import pick_model
 from .context_compression import compress
 from .debug import print_debug

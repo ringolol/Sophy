@@ -6,6 +6,10 @@
 
 ### [done] /pure (no prompt injection)
 
+### telegram
+
+### tests
+
 ### /btw
 
 ### custom commands arguments
