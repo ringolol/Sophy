@@ -77,7 +77,6 @@ def agent_loop():
     commands = ['/quit', '/new', '/compress', '/resume', '/model'] + [c.command for c in custom_commands]
     completer = WordCompleter(commands, ignore_case=True, sentence=True)
 
-    task_prefix = ""
     while True:
         session = session_holder[0]
         try:
@@ -100,7 +99,6 @@ def agent_loop():
                 console.print(f"[green]Session {session.id} saved.[/green]")
             break
         if task == "/new":
-            task_prefix = ''
             if session.entries:
                 session.save_auto()
             session_holder[0] = Session()
@@ -112,7 +110,6 @@ def agent_loop():
             compress(solver_agent, session_holder)
             continue
         if task == "/resume":
-            task_prefix = ''
             if session.entries:
                 session.save_auto()
             session_holder[0] = pick_session()
@@ -131,9 +128,8 @@ def agent_loop():
 
         try:
             maybe_compress(solver_agent, session_holder, solver_preset)
-            result = solver_agent.run(task_prefix + task, reset=False)
+            result = solver_agent.run(task, reset=False)
             log_context_usage(_, solver_agent)
-            task_prefix = ""
             session = session_holder[0]
 
             tools_used = []
@@ -150,7 +146,14 @@ def agent_loop():
             )
         except (KeyboardInterrupt, ToolDeniedException):
             console.print(f"\n[red]The execution was stopped manually[/red]\n")
-            task_prefix = "[User stopped the last tool execution manually! Be attentive User could ask you to change something about the last task!]\n\n"
+            from smolagents.memory import ActionStep, Timing
+            import time
+            observation_step = ActionStep(
+                step_number=solver_agent.step_number,
+                observations="[User stopped the last tool execution manually! Be attentive User could ask you to change something about the last task!]",
+                timing=Timing(start_time=time.time(), end_time=time.time())
+            )
+            solver_agent.memory.steps.append(observation_step)
             session_holder[0].add_entry(
                 task=task,
                 result="[interrupted]",
