@@ -1,8 +1,6 @@
 .venv
 .env
 *.pyc
-.sophy/
-!.sophy/config.json
 sophy.egg-info
 build
 __pycache__

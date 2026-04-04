@@ -50,6 +50,8 @@ def agent_loop():
 
     def switch_model(preset: ModelPreset):
         nonlocal solver_preset, solver_agent, explorer_agent, explorer_model
+        if preset == solver_preset:
+            return
         solver_preset = preset
         new_model = make_model(preset)
 
