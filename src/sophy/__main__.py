@@ -76,7 +76,7 @@ def agent_loop():
     def _(event):
         event.current_buffer.newline()
 
-    commands = ['/quit', '/new', '/compress', '/resume', '/model'] + [c.command for c in custom_commands]
+    commands = ['/quit', '/new', '/fork', '/compress', '/resume', '/model'] + [c.command for c in custom_commands]
     completer = WordCompleter(commands, ignore_case=True, sentence=True)
 
     while True:
@@ -106,6 +106,22 @@ def agent_loop():
             session_holder[0] = Session()
             solver_agent.memory.reset()
             console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]\n")
+            print_session_separator()
+            continue
+        if task == "/fork":
+            if session.entries:
+                session.save_auto()
+            
+            # Create a new session and copy the entries from the current one
+            new_session = Session(entries=list(session.entries), is_forked=True)
+            session_holder[0] = new_session
+            
+            # The memory is already restored in solver_agent due to load_session(solver_agent, session) 
+            # happening before or during the loop, but we should ensure the agent's memory 
+            # matches the new session (which is a copy of the old one anyway).
+            # The solver_agent's memory is already at the state of the current session entries.
+            
+            console.print(f"[dim][bold]Session forked to:[/bold] {session_holder[0].id}[/dim]\n")
             print_session_separator()
             continue
         if task == "/compress":

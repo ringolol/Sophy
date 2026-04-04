@@ -1,6 +1,6 @@
 ## Sophy TODOs
 
-### ~/.sophy
+### [done] ~/.sophy
 
 ### /fork
 
@@ -8,15 +8,17 @@
 
 ### /pure (no prompt injection)
 
-### summarize initial question as chat description
+### custom commands arguments
 
 ### model api call observability
 
 ### protect models from raw exceptions
 
-### mods: /plan, /lucky
+### modes: /plan, /lucky
 
 ### add session updated_at, sort by it in sessions list
+
+### summarize initial question as chat description
 
 ---
 

@@ -11,7 +11,7 @@ import questionary
 
 from .ui import console
 from .factory import log_context_usage
-from .paths import get_session_dir, get_all_session_dirs
+from .paths import get_user_session_dir
 
 
 @dataclass
@@ -28,6 +28,7 @@ class Session:
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
     entries: list[ConversationEntry] = field(default_factory=list)
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    is_forked: bool = False
 
     def add_entry(self, task: str, result: str, steps: list[dict], tools_used: list[str]):
         self.entries.append(ConversationEntry(
@@ -80,14 +81,14 @@ class Session:
     @classmethod
     def from_dict(cls, data: dict) -> "Session":
         entries = [ConversationEntry(**e) for e in data.get("entries", [])]
-        return cls(id=data["id"], entries=entries, created_at=data["created_at"])
+        return cls(id=data["id"], entries=entries, created_at=data["created_at"], is_forked=data.get("is_forked", False))
 
     def save(self, path: str):
         with open(path, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
     def save_auto(self):
-        sessions_dir = get_session_dir()
+        sessions_dir = get_user_session_dir()
         os.makedirs(sessions_dir, exist_ok=True)
         self.save(os.path.join(sessions_dir, f"{self.id}.json"))
 
@@ -99,28 +100,30 @@ class Session:
 
 def list_sessions() -> list[dict]:
     """Returns session metadata sorted by creation time (newest first)."""
-    all_dirs = get_all_session_dirs()
+    sessions_dir = get_user_session_dir()
     sessions = []
-    for sessions_dir in all_dirs:
-        if not os.path.isdir(sessions_dir):
+    
+    if not os.path.isdir(sessions_dir):
+        return sessions
+        
+    for fname in os.listdir(sessions_dir):
+        if not fname.endswith(".json"):
             continue
-        for fname in os.listdir(sessions_dir):
-            if not fname.endswith(".json"):
-                continue
-            path = os.path.join(sessions_dir, fname)
-            try:
-                with open(path) as f:
-                    data = json.load(f)
-                first_task = data["entries"][0]["task"] if data.get("entries") else ""
-                sessions.append({
-                    "id": data["id"],
-                    "created_at": data["created_at"],
-                    "entry_count": len(data.get("entries", [])),
-                    "preview": first_task[:100].replace("\n", " ").rstrip('.') + '...',
-                    "path": path,
-                })
-            except (json.JSONDecodeError, KeyError):
-                continue
+        path = os.path.join(sessions_dir, fname)
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            first_task = data["entries"][0]["task"] if data.get("entries") else ""
+            sessions.append({
+                "id": data["id"],
+                "created_at": data["created_at"],
+                "is_forked": data.get("is_forked", False),
+                "entry_count": len(data.get("entries", [])),
+                "preview": first_task[:100].replace("\n", " ").rstrip('.') + '...',
+                "path": path,
+            })
+        except (json.JSONDecodeError, KeyError):
+            continue
     sessions.sort(key=lambda s: s["created_at"], reverse=True)
     return sessions
 
@@ -149,7 +152,7 @@ def pick_session() -> Session:
     choices = [
         questionary.Choice(title="[New Session]", value="NEW_SESSION")
     ] + [
-        questionary.Choice(title=f"{s['id']} - {s['preview']}", value=s)
+        questionary.Choice(title=f"{'[F] ' if s['is_forked'] else ''}{s['id']} - {s['preview']}", value=s)
         for s in saved
     ]
 
