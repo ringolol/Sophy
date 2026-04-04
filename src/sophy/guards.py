@@ -2,7 +2,7 @@ import functools
 import os
 import re
 
-from .ui import console
+from .ui import console, prompt_in_terminal
 
 
 _guard_config = None
@@ -54,9 +54,8 @@ def confirm(fn):
             console.print("[dim][green](auto-approved)[/green][/dim]")
             return result
 
-        while (answer := console.input("[cyan]Allow?[/cyan] \[y/n]: ").strip().lower()) not in ("y", "n"):
-            print("\033[A\033[2K", end="", flush=True)
-        print("\033[A\033[2K", end="", flush=True)
+        while (answer := prompt_in_terminal("\033[36mAllow?\033[0m [y/n]: ").strip().lower()) not in ("y", "n"):
+            pass
         if answer != "y":
             raise ToolDeniedException()
         return fn(*args, **kwargs)

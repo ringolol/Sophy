@@ -2,7 +2,7 @@ from smolagents.memory import ActionStep, TaskStep
 from smolagents.models import ChatMessage, MessageRole
 
 from .session import Session
-from .ui import console
+from .ui import console, prompt_in_terminal
 from .config import ModelPreset
 
 
@@ -109,7 +109,7 @@ def maybe_compress(agent, session_holder: list, model_preset: ModelPreset) -> No
         f"\n[bold yellow]Context usage high[/bold yellow] "
         f"({input_tokens}/{context_window} tokens, {usage_ratio:.0%} used)"
     )
-    if console.input("Compress context? \[y/n]: ").strip().lower() != "y":
+    if prompt_in_terminal("\033[36mCompress context?\033[0m [y/n]: ").strip().lower() != "y":
         return
 
     compress(agent, session_holder)

@@ -67,9 +67,10 @@ class CustomAgentLogger(AgentLogger):
 def apply_custom_logger(agent, task_color: str = PANEL_COLORS["task"], observation_color: str = PANEL_COLORS["observation"]):
     """Apply custom logger with per-panel colors."""
 
+    from .ui import console
     agent.logger = CustomAgentLogger(
         level=LogLevel.INFO,
-        console=agent.logger.console,
+        console=console,
         task_color=task_color,
         observation_color=observation_color
     )

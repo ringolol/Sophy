@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import uuid
@@ -101,7 +102,7 @@ class Session:
 def list_sessions() -> list[dict]:
     """Returns session metadata sorted by creation time (newest first)."""
     sessions_dir = get_user_session_dir()
-    sessions = []
+    sessions: list = []
 
     if not os.path.isdir(sessions_dir):
         return sessions
@@ -142,7 +143,7 @@ def load_session(agent, s: Session, print_history=True):
         log_context_usage(None, agent)
 
 
-def pick_session() -> Session:
+async def pick_session() -> Session:
 
     saved = list_sessions()
 
@@ -158,12 +159,14 @@ def pick_session() -> Session:
         ('highlighted', 'fg:cyan'),
     ])
 
-    selected = questionary.select(
-        "Choose a session:",
-        choices=choices,
-        use_indicator=True,
-        style=style,
-    ).ask()
+    selected = await asyncio.to_thread(
+        lambda: questionary.select(
+            "Choose a session:",
+            choices=choices,
+            use_indicator=True,
+            style=style,
+        ).ask()
+    )
 
     # questionary returns None on Ctrl+C or Esc
     if selected is None:

@@ -15,33 +15,60 @@ This plan outlines the steps to refactor Sophy to support non-blocking user inpu
 ## 3. Implementation Steps
 1.  **Dependencies**: Ensure `asyncio` and `prompt_toolkit.patch_stdout` are utilized.
 2.  **State Management**: Introduce `asyncio.Event` to track whether the agent is active (`is_busy`).
-3.  **KeyBinding Updates**:
-    - Modify `KeyBindings` to conditionally disable the `enter` key submission when `is_busy` is set.
-    - If `is_busy` is set and the user presses `enter`, print a warning: "Agent is busy, please wait for it to finish."
+3.  **KeyBinding & UI Updates**:
+    - Introduce `asyncio.Event` to track whether the agent is active (`is_busy`).
+    - Use a dynamic `HTML` prompt function (`get_prompt`) that shows `❯ [BUSY] ` when the agent is running.
+    - Call `get_app().invalidate()` whenever `is_busy` changes to force a prompt refresh.
+    - Use a `prompt_toolkit` `Condition` to disable the `enter` key submission when `is_busy` is set.
 4.  **Async Loop**:
     ```python
-    async def async_agent_loop():
-        with patch_stdout():
-            # Define KeyBindings with condition
-            bindings = KeyBindings()
-            
-            @bindings.add('enter', filter=~is_busy_condition)
-            def _(event):
-                event.current_buffer.validate_and_handle()
-                
-            @bindings.add('enter', filter=is_busy_condition)
-            def _(event):
-                console.print("[yellow]Agent is busy, please wait for it to finish.[/yellow]")
+    import asyncio
+    from prompt_toolkit import PromptSession
+    from prompt_toolkit.formatted_text import HTML
+    from prompt_toolkit.patch_stdout import patch_stdout
+    from prompt_toolkit.application import get_app
+    from prompt_toolkit.filters import Condition
 
-            while True:
-                task = await session.prompt_async("\n❯ ", key_bindings=bindings)
-                # The prompt now only returns if the agent is not busy
+    is_busy = asyncio.Event()
+
+    def get_prompt():
+        if is_busy.is_set():
+            return HTML('<b><ansicyan>❯</ansicyan></b> <ansired>[BUSY]</ansired> ')
+        return HTML('<b><ansicyan>❯</ansicyan></b> ')
+
+    def refresh_ui():
+        try:
+            get_app().invalidate()
+        except Exception:
+            pass
+
+    @Condition
+    def is_not_busy():
+        return not is_busy.is_set()
+
+    async def async_agent_loop():
+        session = PromptSession()
+        # Add the filter to your enter key binding
+        @bindings.add('enter', filter=is_not_busy)
+        def _(event):
+            event.current_buffer.validate_and_handle()
+
+        while True:
+            with patch_stdout():
+                # prompt_async will automatically call get_prompt()
+                task = await session.prompt_async(get_prompt, key_bindings=bindings)
+
+            is_busy.set()
+            refresh_ui()
+
+            try:
+                # asyncio.to_thread keeps the UI event loop alive while the agent runs
                 await asyncio.to_thread(solver_agent.run, task)
+            ...
+            finally:
+                is_busy.clear()
+                refresh_ui()
     ```
+
 5.  **Refactor**:
     - Update all calls to `solver_agent.run` to be wrapped in thread execution.
-    - Ensure `session_holder` and `solver_agent` state access is protected/synchronized.
-
-## 4. Risks & Mitigations
-- **Thread Safety**: Use locks if multiple threads modify `session.entries` or agent memory.
-- **UI Flickering**: Ensure `Rich` console prints are captured by `patch_stdout()`.

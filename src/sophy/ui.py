@@ -1,13 +1,34 @@
+import asyncio
 import functools
 import difflib
 
 from rich.console import Console
 from rich.syntax import Syntax
+from prompt_toolkit.application import run_in_terminal
 
 from .debug import print_debug
 
 
 console = Console()
+
+_main_loop = None
+
+
+def set_main_loop(loop):
+    global _main_loop
+    _main_loop = loop
+
+
+def prompt_in_terminal(question: str) -> str:
+    """Prompt the user from a background thread, suspending the active prompt."""
+    def _ask():
+        return input(question)
+
+    async def _run():
+        return await run_in_terminal(_ask, in_executor=False)
+
+    future = asyncio.run_coroutine_threadsafe(_run(), _main_loop)
+    return future.result()
 
 
 def print_session_separator():

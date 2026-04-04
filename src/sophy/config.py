@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import json
@@ -34,10 +35,10 @@ class GuardConfig:
 def load_guard_config() -> GuardConfig:
     config_path = get_config_path()
     project_dir = os.path.dirname(os.path.abspath(config_path))
-    
+
     if not os.path.isfile(config_path):
         return GuardConfig(project_dir=project_dir)
-        
+
     with open(config_path) as f:
         data = json.load(f)
     patterns = [re.compile(p) for p in data.get("allowed_command_patterns", [])]
@@ -95,7 +96,7 @@ def load_config() -> Config:
     return Config(models=models, custom_commands=custom_commands)
 
 
-def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> ModelPreset:
+async def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> ModelPreset:
     def provider(api_base: str):
         if "google" in api_base:
             return "Google"
@@ -124,14 +125,16 @@ def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> ModelP
                 default_index = i
                 break
 
-    choice = questionary.select(
-        "Choose a model:",
-        choices=choices,
-        default=models[default_index],
-        use_indicator=True,
-        show_description=True,
-        style=style,
-    ).ask()
+    choice = await asyncio.to_thread(
+        lambda: questionary.select(
+            "Choose a model:",
+            choices=choices,
+            default=models[default_index],
+            use_indicator=True,
+            show_description=True,
+            style=style,
+        ).ask()
+    )
 
     if choice:
         return choice
