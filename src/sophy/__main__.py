@@ -6,14 +6,15 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
 from smolagents.memory import ActionStep
 
-from .config import ModelPreset, pick_model, load_guard_config
+from .config import ModelPreset, pick_model, load_guard_config, load_config
 from .utils import parse_arguments
 from .guards import ToolDeniedException, set_guard_config
-from .ui import console, print_debug
+from .ui import console
+from .debug import print_debug
 from .context_compression import maybe_compress, compress
 from .session import Session, load_session, pick_session
 from .history_provider import set_history_provider
-from .factory import get_model_presets, log_context_usage, make_model, make_solver_agent, make_explorer_agent
+from .factory import log_context_usage, make_model, make_solver_agent, make_explorer_agent
 
 
 # guards
@@ -26,8 +27,12 @@ set_history_provider(session_holder[0].get_summary)
 
 def agent_loop():
     args = parse_arguments()
-
-    available_presets = get_model_presets(args)
+    config = load_config()
+    custom_models = []
+    if args.model and args.api_base and args.api_key:
+        custom_models.append(ModelPreset(args.model, args.api_base, args.api_key, "Custom"))
+    available_presets = custom_models + config.models
+    custom_commands = config.custom_commands
     solver_preset = pick_model(available_presets)
 
     available_explorer_presets = [p for p in available_presets if p.explorer]
@@ -70,7 +75,7 @@ def agent_loop():
     def _(event):
         event.current_buffer.newline()
 
-    commands = ['/quit', '/new', '/compress', '/resume', '/model']
+    commands = ['/quit', '/new', '/compress', '/resume', '/model'] + [c.command for c in custom_commands]
     completer = WordCompleter(commands, ignore_case=True, sentence=True)
 
     task_prefix = ""
@@ -89,6 +94,7 @@ def agent_loop():
             exit()
         if not task:
             continue
+
         if task == "/quit":
             if session.entries:
                 session.save_auto()
@@ -116,6 +122,11 @@ def agent_loop():
         if task == "/model":
             switch_model(pick_model(available_presets))
             continue
+
+        for cmd in custom_commands:
+            if task == cmd.command:
+                task = cmd.prompt
+                print_debug(task)
 
         try:
             maybe_compress(solver_agent, session_holder, solver_preset)

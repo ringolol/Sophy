@@ -11,18 +11,6 @@ from .smolagents_patches import apply_monkey_patches, apply_explorer_monkey_patc
 from .patched_model import ThinkingModel
 
 
-def get_model_presets(args):
-    _all_presets = load_config()
-    if args.model and args.api_base and args.api_key:
-        _all_presets.append(ModelPreset(args.model, args.api_base, args.api_key, "Custom"))
-
-    _available_presets = [p for p in _all_presets if p.api_key]
-    if not _available_presets:
-        console.print("[red]No models available. Provide --model/--api_base/--api_key args or create .sophy/config.json[/red]")
-        raise SystemExit(1)
-
-    return _available_presets
-
 def make_model(preset: ModelPreset) -> ThinkingModel:
     kwargs = {}
     if not preset.system_prompt:

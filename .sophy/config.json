@@ -2,6 +2,12 @@
   "allowed_command_patterns": [
     "^git (status|diff|log|show|branch)"
   ],
+  "custom_commands": [
+      {
+          "command": "/git",
+          "prompt": "look at the changes, come up with a detailed message and commit them to git"
+      }
+  ],
   "models": [
     {
       "label": "Gemini 3.1 Flash Lite",

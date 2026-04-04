@@ -1,18 +1,13 @@
 import functools
-import os
 import difflib
 
 from rich.console import Console
 from rich.syntax import Syntax
 
+from .debug import print_debug
+
 
 console = Console()
-
-
-def print_debug(*args, **kwargs):
-    if not os.environ.get("DEBUG", ""):
-        return
-    console.print(*args, **kwargs)
 
 
 def _print_diff(old_lines, new_lines, path) -> bool:

@@ -12,6 +12,8 @@ from rich.text import Text
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextvars import copy_context
 
+from .debug import is_debug
+
 
 PANEL_COLORS = {
     "task": "#0DBC79",
@@ -78,7 +80,7 @@ def hide_observation_logs(agent):
 
     _original_log = agent.logger.log
     def _filtered_log(*args, **kwargs):
-        if args and isinstance(args[0], str) and args[0].startswith("Observations:"):
+        if not is_debug and args and isinstance(args[0], str) and args[0].startswith("Observations:"):
             return
         if args and isinstance(args[0], Text):
             text_str = args[0].plain

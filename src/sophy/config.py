@@ -42,17 +42,30 @@ def load_guard_config() -> GuardConfig:
     )
 
 
-def load_config() -> list[ModelPreset]:
+@dataclass
+class CustomCommand:
+    command: str
+    prompt: str
+
+
+@dataclass
+class Config:
+    models: list[ModelPreset]
+    custom_commands: list[CustomCommand]
+
+
+def load_config() -> Config:
     def _resolve_env(value: str) -> str:
         if value.startswith("$"):
             return os.environ.get(value[1:], "")
         return value
 
     if not os.path.isfile(CONFIG_PATH):
-        return []
+        return Config(models=[], custom_commands=[])
     with open(CONFIG_PATH) as f:
         data = json.load(f)
-    return [
+    
+    models = [
         ModelPreset(
             model_id=m["model_id"],
             api_base=m["api_base"],
@@ -65,6 +78,13 @@ def load_config() -> list[ModelPreset]:
         )
         for m in data.get("models", [])
     ]
+    
+    custom_commands = [
+        CustomCommand(command=c["command"], prompt=c["prompt"])
+        for c in data.get("custom_commands", [])
+    ]
+    
+    return Config(models=models, custom_commands=custom_commands)
 
 
 def pick_model(models: list[ModelPreset]) -> ModelPreset:

@@ -2,7 +2,8 @@ from smolagents import OpenAIServerModel
 from rich.console import Console
 from rich.panel import Panel
 
-from .ui import print_debug, console
+from .ui import console
+from .debug import print_debug
 
 
 class ThinkingModel(OpenAIServerModel):
