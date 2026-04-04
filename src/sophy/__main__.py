@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import time
 import traceback
+
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
-from smolagents.memory import ActionStep
+from smolagents.memory import ActionStep, Timing
 
 from .config import ModelPreset, pick_model, load_guard_config, load_config
 from .utils import parse_arguments
@@ -146,8 +148,6 @@ def agent_loop():
             )
         except (KeyboardInterrupt, ToolDeniedException):
             console.print(f"\n[red]The execution was stopped manually[/red]\n")
-            from smolagents.memory import ActionStep, Timing
-            import time
             observation_step = ActionStep(
                 step_number=solver_agent.step_number,
                 observations="[User stopped the last tool execution manually! Be attentive User could ask you to change something about the last task!]",
