@@ -46,11 +46,16 @@ def log_context_usage(step_log, agent):
         context_window = agent.model.context_window
         if input_tokens and context_window:
             usage_ratio = input_tokens / context_window
+            color = "green"
+            if usage_ratio > 1:
+                color = "red"
+            elif usage_ratio > 0.8:
+                color = "yellow"
             bar_length = 10
             filled_length = int(bar_length * usage_ratio)
             bar = "█" * filled_length + "░" * (bar_length - filled_length)
             console.print(
-                f"[dim]Context usage: {bar} {usage_ratio:.0%}[/dim]"
+                f"[dim]Context usage: [{color}]{bar} {usage_ratio:.0%}[/{color}][/dim]"
             )
 
 def make_agent(
@@ -68,7 +73,7 @@ def make_agent(
         max_steps=MAX_AGENT_STEPS,
         verbosity_level=LogLevel.ERROR,
         stream_outputs=True,
-        step_callbacks=[remind_final_answer, log_context_usage],
+        step_callbacks=[remind_final_answer],
     )
     if extra_kwargs:
         base_kwargs.update(extra_kwargs)

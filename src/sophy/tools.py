@@ -175,14 +175,20 @@ def edit_file(file_path: str, old_content: str, new_content: str) -> str:
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(new_file)
 
-    diff = list(difflib.unified_diff(
-        content.splitlines(),
-        new_file.splitlines(),
-        fromfile=f"a/{file_path}",
-        tofile=f"b/{file_path}",
-        lineterm=""
-    ))
-    return f"Edited {file_path}\n" + "\n".join(diff)
+    diff = "\n".join(
+        difflib.unified_diff(
+            content.splitlines(),
+            new_file.splitlines(),
+            fromfile=f"a/{file_path}",
+            tofile=f"b/{file_path}",
+            lineterm=""
+        )
+    )
+
+    if not diff:
+        return "File have NOT been changed. Try again!"
+
+    return f"Edited {file_path}\n" + diff
 
 
 @tool

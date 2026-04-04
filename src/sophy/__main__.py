@@ -13,7 +13,7 @@ from .ui import console, print_debug
 from .context_compression import maybe_compress, compress
 from .session import Session, load_session, pick_session
 from .history_provider import set_history_provider
-from .factory import get_model_presets, make_model, make_solver_agent, make_explorer_agent
+from .factory import get_model_presets, log_context_usage, make_model, make_solver_agent, make_explorer_agent
 
 
 # guards
@@ -49,13 +49,16 @@ def agent_loop():
         solver_agent = make_solver_agent(preset, new_model, explorer_agent)
         load_session(solver_agent, session_holder[0])
         console.print(f"[dim][bold]Model:[/bold] {preset.label}[/dim]\n")
+        console.rule(style="dim")
 
     print_debug(f'[dim]{solver_agent.system_prompt}[/dim]')
     session_holder[0] = pick_session()
     console.print(f"[dim][bold]Session:[/bold] {session_holder[0].id}[/dim]")
     console.print(f"[dim][bold]Model:[/bold] {solver_preset.label}[/dim]")
-    console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /model to switch model, /compress to compress context. Ctrl+C to stop execution\n")
+    console.print("Type /quit to exit, /resume to switch sessions, /new to create a new session, /model to switch model, /compress to compress context. Ctrl+C to stop execution")
     load_session(solver_agent, session_holder[0])
+    console.rule(style="dim")
+    console.print()
 
     bindings = KeyBindings()
 
@@ -117,6 +120,7 @@ def agent_loop():
         try:
             maybe_compress(solver_agent, session_holder, solver_preset)
             result = solver_agent.run(task_prefix + task, reset=False)
+            log_context_usage(_, solver_agent)
             task_prefix = ""
             session = session_holder[0]
 

@@ -37,16 +37,16 @@ class CustomAgentLogger(AgentLogger):
     def log_task(self, content: str, subtitle: str, title: str | None = None, level=LogLevel.INFO) -> None:
         """Log task with custom color for 'New run' panel."""
 
-        self.log(
-            Panel(
-                f"\n[bold]{escape_code_brackets(content)}\n",
-                title="[bold]" + (f"New run - {title}" if title else "New run"),
-                subtitle=subtitle,
-                border_style=self.task_color,
-                subtitle_align="left",
-            ),
-            level=level,
-        )
+        # self.log(
+        #     Panel(
+        #         f"\n[bold]{escape_code_brackets(content)}\n",
+        #         title="[bold]" + (f"New run - {title}" if title else "New run"),
+        #         subtitle=subtitle,
+        #         border_style=self.task_color,
+        #         subtitle_align="left",
+        #     ),
+        #     level=level,
+        # )
 
     def log_observation(self, content: str, title: str | None = None, level=LogLevel.INFO) -> None:
         """Log observation with custom color."""
