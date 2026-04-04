@@ -4,7 +4,7 @@ Sophy is a coding agent harness. It implements a tool-call loop in which agent s
 ## Stack
 - python 3.11
 - smolagents
-- openai api compatable models
+- openai api compatible models
 
 ## Main Python Files (src/sophy/)
 - Main entry point: __main__.py
