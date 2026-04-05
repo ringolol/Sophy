@@ -3,7 +3,7 @@ from smolagents.agents import ToolCallingAgent, CodeAgent, ActionStep, PlanningS
 from typing import Generator, Any
 import time
 from rich.text import Text
-from smolagents import LogLevel, LocalPythonExecutor
+from smolagents import BASE_BUILTIN_MODULES, LogLevel, LocalPythonExecutor
 from smolagents.monitoring import YELLOW_HEX
 
 from .ui import console
@@ -177,7 +177,7 @@ class CustomCodeAgent(CustomAgentMixin, CodeAgent):
     def __init__(self, *args, **kwargs):
         if 'executor' not in kwargs:
             kwargs['executor'] = LocalPythonExecutor(
-                additional_authorized_imports=["*"],
+                additional_authorized_imports=BASE_BUILTIN_MODULES,
                 timeout_seconds=5*60
             )
         super().__init__(*args, **kwargs)

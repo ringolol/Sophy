@@ -34,7 +34,7 @@
       "context": 256000,
       "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
       "api_key": "$GEMINI_API_KEY",
-      "tools": false
+      "tools": true
     },
     {
       "label": "Gemma 3 27B",
