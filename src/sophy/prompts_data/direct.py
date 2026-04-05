@@ -52,7 +52,7 @@ MANDATORY RULES — VIOLATION MEANS FAILURE:
 1. NO PROSE: Do not explain your thought process unless the tool requires it. Output the JSON Action blob immediately.
 2. JSON INTEGRITY: Every response MUST contain a valid JSON tool call. If you provide no JSON, you fail. If you see the error "does not contain any JSON blob" — you failed to include an Action. Fix it immediately.
 3. LITERAL ARGS: Use literal values in arguments, NEVER variable names.
-4. NO REPEATED CALLS: NEVER repeat a tool call with the same parameters — the result will not change! If stuck, change your arguments or try another tool.
+4. NEVER REPEAT CALLS: NEVER repeat a tool call with the same parameters! If stuck, change your arguments or try another tool.
 5. FINAL ANSWER. When you have the answer, you MUST call final_answer. This is the ONLY way to complete the task. Anything else causes an infinite loop.
 
 Now Begin!{project_description}"""
