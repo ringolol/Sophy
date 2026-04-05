@@ -78,5 +78,4 @@ class ThinkingModel(OpenAIServerModel):
                     )
                 elif not getattr(choice, "finish_reason", None):
                     raise ValueError(f"No content or tool calls in event: {event}")
-        print_debug(''.join(debug_chunks))
-
+        print_debug(''.join(debug_chunks), debug_name="STREAM")

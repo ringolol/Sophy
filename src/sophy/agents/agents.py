@@ -41,7 +41,7 @@ async def initialize_agents() -> AgentContext:
     # agents
     explorer_agent = make_explorer_agent(explorer_model, use_code_format=not explorer_preset.tools)
     solver_agent = make_solver_agent(solver_preset, solver_model, explorer_agent)
-    print_debug(f'[dim]{solver_agent.system_prompt}[/dim]')
+    print_debug(solver_agent.system_prompt, debug_name="PROMPT")
 
     return AgentContext(
         solver_agent=solver_agent,

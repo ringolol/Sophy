@@ -53,7 +53,7 @@ class CommandHandler:
             prompt = cmd.prompt
 
             async def handler(handler, prompt=prompt):
-                print_debug(prompt)
+                print_debug(prompt, debug_name="CUSTOM TOOL PROMPT")
                 return CommandResult(consumed=False, task=prompt)
 
             command_registry.commands[cmd.command] = Command(

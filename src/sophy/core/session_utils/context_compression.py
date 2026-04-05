@@ -35,21 +35,6 @@ def summarize_context(agent) -> str:
     return response.content.strip()
 
 
-def _format_messages_for_summary(messages: list[ChatMessage]) -> str:
-    parts = []
-    for msg in messages:
-        role = msg.role.value if hasattr(msg.role, "value") else str(msg.role)
-        if isinstance(msg.content, list):
-            text = " ".join(
-                item.get("text", "") for item in msg.content if isinstance(item, dict) and item.get("type") == "text"
-            )
-        else:
-            text = str(msg.content)
-        if text.strip():
-            parts.append(f"[{role}] {text.strip()}")
-    return "\n\n".join(parts)
-
-
 def _get_last_task_steps(agent) -> list:
     last_task_idx = None
     for i in range(len(agent.memory.steps) - 1, -1, -1):

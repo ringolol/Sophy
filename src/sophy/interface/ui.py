@@ -136,7 +136,7 @@ def command_preview(func):
                     console.print(f"   - [cyan]arg{i}[/cyan]: {arg}")
 
         result = func(*args, **kwargs)
-        print_debug(f"[bold blue]Result:[/bold blue]\n{result}")
+        print_debug(f"Result:\n{result}", debug_name="TOOLS' RESULT")
 
         return result
     return wrapper
