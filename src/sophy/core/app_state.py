@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass, field
 
 from sophy.core.config import load_guard_config
-from sophy.utils.guards import set_guard_config
+from sophy.tools.guards import set_guard_config
 from sophy.core.session_utils.history_provider import set_history_provider
 from sophy.core.session import Session
 

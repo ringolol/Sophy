@@ -11,7 +11,7 @@ from smolagents.local_python_executor import InterpreterError
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 
-from sophy.utils.guards import confirm, path_expand
+from sophy.tools.guards import confirm, path_expand
 from sophy.interface.ui import command_preview, final_preview, patch_tool
 from sophy.core.session_utils.history_provider import get_history_provider
 
