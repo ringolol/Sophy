@@ -73,7 +73,7 @@ MANDATORY RULES — VIOLATION MEANS FAILURE:
 # your code
 </code>` tag. If you provide NO code tag, you fail!
 2. Do NOT USE MarkDown code block ```python```, USE code tags <code></code>!
-3. TOOLS ARE STATELESS. Do NOT call them multiple times.
+3. NO REPEATED CALLS: Never call the same tool with the same arguments twice — the result will not change! If stuck, change your arguments or try another tool.
 4. TOOL CALLS AS FUNCTIONS: Call tools as regular Python functions with keyword arguments. Example: `<code>read_file(file_path="main.py")</code>`.
 5. USE print(): Use `<code>
 print("...")

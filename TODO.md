@@ -6,7 +6,11 @@
 
 ### [done] /pure (no prompt injection)
 
+### python/bash output
+
 ### telegram
+
+### raspberry sever + docker
 
 ### tests
 
