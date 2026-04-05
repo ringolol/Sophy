@@ -10,9 +10,11 @@
 
 ### [done] python/bash output
 
+### [done] better tool result preview
+
 ### telegram
 
-### raspberry sever + docker
+### raspberry server + docker
 
 ### tests
 

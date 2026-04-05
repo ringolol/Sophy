@@ -369,10 +369,10 @@ def explorer(task: str) -> str:
 
 # Default Tools
 web_search = DuckDuckGoSearchTool()
-patch_tool(web_search, command_preview)
+patch_tool(web_search, command_preview())
 web_search.description = "DuckDuckGo search."
 visit_webpage = VisitWebpageTool()
-patch_tool(visit_webpage, command_preview)
+patch_tool(visit_webpage, command_preview())
 visit_webpage.description = "Reads a URL as markdown."
 final_answer = FinalAnswerTool()
 patch_tool(final_answer, final_preview)
