@@ -2,7 +2,7 @@ from smolagents.memory import ActionStep, TaskStep
 from smolagents.models import ChatMessage, MessageRole
 
 from sophy.core.session import Session
-from sophy.interface.ui import console, prompt_in_terminal
+from sophy.interface.ui import console
 from sophy.core.config import ModelPreset
 
 
@@ -86,11 +86,13 @@ def maybe_compress(agent, app_state, model_preset: ModelPreset) -> None:
     if usage_ratio < COMPRESSION_THRESHOLD:
         return
 
+    from sophy.interface.base import get_frontend
+
     console.print(
         f"\n[bold yellow]Context usage high[/bold yellow] "
         f"({input_tokens}/{context_window} tokens, {usage_ratio:.0%} used)"
     )
-    if prompt_in_terminal("\033[36mCompress context?\033[0m [y/n]: ").strip().lower() != "y":
+    if not get_frontend().prompt_confirm_sync("Compress context? [y/n]: "):
         return
 
     compress(agent, app_state)

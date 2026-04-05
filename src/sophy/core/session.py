@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from smolagents import MultiStepAgent, Panel
 from smolagents.memory import TaskStep, ActionStep, ToolCall
 from smolagents.monitoring import Timing, TokenUsage
-import questionary
 
 from sophy.interface.ui import console
 from sophy.utils.paths import get_user_session_dir
@@ -142,39 +141,28 @@ def load_session(agent, s: Session, print_history=True):
 
 
 async def pick_session() -> Session:
+    from sophy.interface.base import get_frontend
 
     saved = list_sessions()
 
     choices = [
-        questionary.Choice(title="[New Session]", value="NEW_SESSION")
+        {"title": "[New Session]", "value": "NEW_SESSION"}
     ] + [
-        questionary.Choice(title=f"{'[F] ' if s['is_forked'] else ''}{s['id']} - {s['preview']}", value=s)
+        {"title": f"{'[F] ' if s['is_forked'] else ''}{s['id']} - {s['preview']}", "value": s}
         for s in saved
     ]
 
-    from questionary import Style
-    style = Style([
-        ('highlighted', 'fg:cyan'),
-    ])
+    selected = await get_frontend().prompt_select("Choose a session:", choices)
 
-    selected = await asyncio.to_thread(
-        lambda: questionary.select(
-            "Choose a session:",
-            choices=choices,
-            use_indicator=True,
-            style=style,
-        ).ask()
-    )
-
-    # questionary returns None on Ctrl+C or Esc
     if selected is None:
         console.print("[dim]Aborted.[/dim]")
         exit(0)
 
-    if selected == "NEW_SESSION":
+    value = selected["value"]
+    if value == "NEW_SESSION":
         return Session()
 
-    return Session.load(selected["path"])
+    return Session.load(value["path"])
 
 
 def _step_from_dict(d: dict) -> TaskStep | ActionStep:

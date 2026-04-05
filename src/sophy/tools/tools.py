@@ -8,8 +8,6 @@ import warnings
 from smolagents import tool
 from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
 from smolagents.local_python_executor import InterpreterError
-from prompt_toolkit import prompt
-from prompt_toolkit.key_binding import KeyBindings
 
 from sophy.tools.guards import confirm, path_expand
 from sophy.interface.ui import command_preview, final_preview, patch_tool
@@ -199,17 +197,10 @@ def ask_user(question: str) -> str:
     Args:
         question: a question to ask
     """
-    bindings = KeyBindings()
-
-    @bindings.add('enter')
-    def _(event):
-        event.current_buffer.validate_and_handle()
-
-    @bindings.add('escape', 'enter')
-    def _(event):
-        event.current_buffer.newline()
-
-    return prompt(f"{question}\n❯ ", multiline=True, key_bindings=bindings).strip()
+    from sophy.interface.base import get_frontend
+    from sophy.interface.ui import console
+    console.print(f"[bold cyan]{question}[/bold cyan]")
+    return get_frontend().get_input_sync().strip()
 
 @tool
 @path_expand

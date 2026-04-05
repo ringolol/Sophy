@@ -2,6 +2,8 @@ import asyncio
 import functools
 import difflib
 
+from io import StringIO
+
 from rich.console import Console
 from rich.syntax import Syntax
 from prompt_toolkit.application import run_in_terminal
@@ -9,7 +11,39 @@ from prompt_toolkit.application import run_in_terminal
 from sophy.utils.debug import print_debug
 
 
-console = Console()
+class ObservableConsole(Console):
+    """Rich Console that notifies listeners on every print() call.
+
+    Listeners receive the plain-text version of the output, enabling
+    non-CLI backends (e.g. Telegram) to mirror all output.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._listeners: list = []
+
+    def add_listener(self, callback):
+        """Register a callback(plain_text: str) invoked on every print."""
+        self._listeners.append(callback)
+
+    def remove_listener(self, callback):
+        self._listeners.remove(callback)
+
+    def print(self, *args, **kwargs):
+        if self._listeners:
+            # Capture plain-text version for listeners
+            capture_console = Console(file=StringIO(), force_terminal=False, no_color=True, width=120)
+            capture_console.print(*args, **{k: v for k, v in kwargs.items() if k != "file"})
+            plain_text = capture_console.file.getvalue()
+            for listener in self._listeners:
+                try:
+                    listener(plain_text)
+                except Exception:
+                    pass
+        super().print(*args, **kwargs)
+
+
+console = ObservableConsole()
 
 _main_loop = None
 

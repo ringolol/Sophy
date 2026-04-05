@@ -2,7 +2,7 @@ import functools
 import os
 import re
 
-from sophy.interface.ui import console, prompt_in_terminal
+from sophy.interface.ui import console
 
 
 _guard_config = None
@@ -54,9 +54,8 @@ def confirm(fn):
             console.print("[dim][green](auto-approved)[/green][/dim]")
             return result
 
-        while (answer := prompt_in_terminal("\033[36mAllow?\033[0m [y/n]: ").strip().lower()) not in ("y", "n"):
-            pass
-        if answer != "y":
+        from sophy.interface.base import get_frontend
+        if not get_frontend().prompt_confirm_sync("Allow? [y/n]: "):
             raise ToolDeniedException()
         return fn(*args, **kwargs)
 

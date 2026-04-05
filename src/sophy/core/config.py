@@ -1,10 +1,7 @@
-import asyncio
 import os
 import re
 import json
 from dataclasses import dataclass, field
-
-import questionary
 
 from sophy.interface.ui import console
 from sophy.utils.paths import get_config_path
@@ -96,7 +93,9 @@ def load_config() -> Config:
     return Config(models=models, custom_commands=custom_commands)
 
 
-async def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> ModelPreset:
+async def pick_model(models: list[ModelPreset], default: ModelPreset | None = None) -> ModelPreset:
+    from sophy.interface.base import get_frontend
+
     def provider(api_base: str):
         if "google" in api_base:
             return "Google"
@@ -109,34 +108,17 @@ async def pick_model(models: list[ModelPreset], default: ModelPreset = None) -> 
         exit(1)
 
     choices = [
-        questionary.Choice(title=p.label, value=p, description=f"\n    Provider: {provider(p.api_base)}\n    Tools: {p.tools}")
+        {
+            "title": p.label,
+            "value": p,
+            "description": f"Provider: {provider(p.api_base)}, Tools: {p.tools}",
+        }
         for p in models
     ]
 
-    from questionary import Style
-    style = Style([
-        ('highlighted', 'fg:cyan'),
-    ])
+    selected = await get_frontend().prompt_select("Choose a model:", choices)
 
-    default_index = 0
-    if default:
-        for i, p in enumerate(models):
-            if p == default:
-                default_index = i
-                break
-
-    choice = await asyncio.to_thread(
-        lambda: questionary.select(
-            "Choose a model:",
-            choices=choices,
-            default=models[default_index],
-            use_indicator=True,
-            show_description=True,
-            style=style,
-        ).ask()
-    )
-
-    if choice:
-        return choice
+    if selected:
+        return selected["value"]
 
     exit(1)
