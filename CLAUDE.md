@@ -1,5 +1,5 @@
 ## Project Idea
-Sophy is a coding agent harness. It implements a tool-call loop in which agent solves tasks passed by user.
+Sophy is a coding agent harness. It implements a tool-call loop in which agents solves tasks passed by user.
 
 ## Stack
 - python 3.11

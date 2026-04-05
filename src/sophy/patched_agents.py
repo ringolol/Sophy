@@ -3,7 +3,7 @@ from smolagents.agents import ToolCallingAgent, CodeAgent, ActionStep, PlanningS
 from typing import Generator, Any
 import time
 from rich.text import Text
-from smolagents import LogLevel
+from smolagents import LogLevel, LocalPythonExecutor
 from smolagents.monitoring import YELLOW_HEX
 
 from .ui import console
@@ -174,6 +174,14 @@ class CustomToolCallingAgent(CustomAgentMixin, ToolCallingAgent):
 
 
 class CustomCodeAgent(CustomAgentMixin, CodeAgent):
+    def __init__(self, *args, **kwargs):
+        if 'executor' not in kwargs:
+            kwargs['executor'] = LocalPythonExecutor(
+                additional_authorized_imports=["*"],
+                timeout_seconds=5*60
+            )
+        super().__init__(*args, **kwargs)
+
     def _run_stream(
         self, task: str, max_steps: int, images: list["PIL.Image.Image"] | None = None
     ) -> Generator[ActionStep | PlanningStep | FinalAnswerStep | ChatMessageStreamDelta]:
