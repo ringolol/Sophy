@@ -1,9 +1,9 @@
 from smolagents.memory import ActionStep, TaskStep
 from smolagents.models import ChatMessage, MessageRole
 
-from .session import Session
-from .ui import console, prompt_in_terminal
-from .config import ModelPreset
+from sophy.core.session import Session
+from sophy.interface.ui import console, prompt_in_terminal
+from sophy.core.config import ModelPreset
 
 
 SUMMARIZATION_PROMPT = (

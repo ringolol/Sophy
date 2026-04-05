@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 from smolagents.agents import MultiStepAgent
 
-from .config import Config, ModelPreset, pick_model, load_config
-from .debug import print_debug
-from .agent_factory import make_model, make_solver_agent, make_explorer_agent
-from .utils import parse_arguments
+from sophy.core.config import Config, ModelPreset, pick_model, load_config
+from sophy.utils.debug import print_debug
+from sophy.agents.agent_factory import make_model, make_solver_agent, make_explorer_agent
+from sophy.utils.utils import parse_arguments
 
 
 @dataclass

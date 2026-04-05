@@ -2,7 +2,7 @@ import functools
 import os
 import re
 
-from .ui import console, prompt_in_terminal
+from sophy.interface.ui import console, prompt_in_terminal
 
 
 _guard_config = None

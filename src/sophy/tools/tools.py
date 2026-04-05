@@ -11,9 +11,9 @@ from smolagents.local_python_executor import InterpreterError
 from prompt_toolkit import prompt
 from prompt_toolkit.key_binding import KeyBindings
 
-from .guards import confirm, path_expand
-from .ui import command_preview, final_preview, patch_tool
-from .history_provider import get_history_provider
+from sophy.utils.guards import confirm, path_expand
+from sophy.interface.ui import command_preview, final_preview, patch_tool
+from sophy.core.history_provider import get_history_provider
 
 
 # supress tools' warnings
@@ -135,14 +135,14 @@ def run_command(command: str) -> str:
     Args:
         command: The shell command to execute.
     """
+    args = [os.path.expanduser(arg) if arg.startswith("~") else arg for arg in shlex.split(command)]
     result = subprocess.run(
-        shlex.split(command),
+        args,
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
         timeout=30,
-        shell=True,  # to expand user path (dangerous)
     )
     output = ""
     if result.stdout:

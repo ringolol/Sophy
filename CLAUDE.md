@@ -6,14 +6,12 @@ Sophy is a coding agent harness. It implements a tool-call loop in which agents 
 - smolagents
 - openai api compatible models
 
-## Main Python Files (src/sophy/)
-- Main entry point: __main__.py
-- Application state management: app_state.py
-- Configuration management: config.py
-- Agent instantiation: agents.py, agent_factory.py
-- Agents' tools: tools.py
-- Agents' prompts: prompts.py, prompts_data/
-- User command handling: commands.py
-- Session manager: session.py, history_provider.py
-- Customizations to smolagents: patched_model.py, patched_agents.py, smolagents_patches.py
-- Utils & Co: utils.py, guards.py, ui.py, debug.py, paths.py, cli.py
+## Project Structure (src/sophy/)
+- Entry point: __main__.py
+- core/ — App state, config, session, history, context compression
+- agents/ — Agent instantiation (agents.py, agent_factory.py)
+  - agents/patches/ — smolagents customizations (patched_agents, patched_model, smolagents_patches)
+- tools/ — Agent tools
+- prompts/ — Prompt building (prompts.py, prompts_data/)
+- interface/ — CLI, commands, UI helpers
+- utils/ — debug, guards, paths, utils

@@ -6,7 +6,7 @@ from rich.text import Text
 from smolagents import BASE_BUILTIN_MODULES, LogLevel, LocalPythonExecutor
 from smolagents.monitoring import YELLOW_HEX
 
-from .ui import console
+from sophy.interface.ui import console
 
 class CustomAgentMixin:
     def run(

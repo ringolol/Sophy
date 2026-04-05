@@ -10,8 +10,8 @@ from smolagents.memory import TaskStep, ActionStep, ToolCall
 from smolagents.monitoring import Timing, TokenUsage
 import questionary
 
-from .ui import console
-from .paths import get_user_session_dir
+from sophy.interface.ui import console
+from sophy.utils.paths import get_user_session_dir
 
 
 @dataclass

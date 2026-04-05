@@ -4,8 +4,8 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
 
-from .commands import CommandHandler, command_registry
-from .ui import console
+from sophy.interface.commands import CommandHandler, command_registry
+from sophy.interface.ui import console
 
 
 def configure_command_handler(ctx, app_state) -> tuple[CommandHandler, list[str]]:

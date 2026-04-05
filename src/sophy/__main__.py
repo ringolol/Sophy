@@ -5,13 +5,13 @@ import traceback
 from prompt_toolkit.patch_stdout import patch_stdout
 from smolagents.memory import ActionStep, Timing
 
-from .agents import initialize_agents, run_agent_sync, interrupt_agent
-from .app_state import init_app
-from .context_compression import maybe_compress
-from .cli import setup_cli, get_prompt_decor
-from .commands import command_registry
-from .guards import ToolDeniedException
-from .ui import console, set_main_loop, print_footer
+from sophy.agents.agents import initialize_agents, run_agent_sync, interrupt_agent
+from sophy.core.app_state import init_app
+from sophy.core.context_compression import maybe_compress
+from sophy.interface.cli import setup_cli, get_prompt_decor
+from sophy.interface.commands import command_registry
+from sophy.utils.guards import ToolDeniedException
+from sophy.interface.ui import console, set_main_loop, print_footer
 
 
 async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_prompt):

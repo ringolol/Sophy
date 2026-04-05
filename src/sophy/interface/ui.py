@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from prompt_toolkit.application import run_in_terminal
 
-from .debug import print_debug
+from sophy.utils.debug import print_debug
 
 
 console = Console()

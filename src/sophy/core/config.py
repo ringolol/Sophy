@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 
 import questionary
 
-from .ui import console
-from .paths import get_config_path
+from sophy.interface.ui import console
+from sophy.utils.paths import get_config_path
 
 
 DEFAULT_CONTEXT_WINDOW = 128000

@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
-from .ui import console, print_footer
-from .session import Session, load_session, pick_session
-from .agent_factory import make_solver_agent, make_model
-from .config import pick_model
-from .context_compression import compress
-from .debug import print_debug
+from sophy.interface.ui import console, print_footer
+from sophy.core.session import Session, load_session, pick_session
+from sophy.agents.agent_factory import make_solver_agent, make_model
+from sophy.core.config import pick_model
+from sophy.core.context_compression import compress
+from sophy.utils.debug import print_debug
 
 @dataclass
 class Command:

@@ -12,7 +12,7 @@ from rich.text import Text
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextvars import copy_context
 
-from .debug import is_debug
+from sophy.utils.debug import is_debug
 
 
 PANEL_COLORS = {
@@ -67,7 +67,7 @@ class CustomAgentLogger(AgentLogger):
 def apply_custom_logger(agent, task_color: str = PANEL_COLORS["task"], observation_color: str = PANEL_COLORS["observation"]):
     """Apply custom logger with per-panel colors."""
 
-    from .ui import console
+    from sophy.interface.ui import console
     agent.logger = CustomAgentLogger(
         level=LogLevel.INFO,
         console=console,

@@ -1,8 +1,8 @@
 from smolagents import OpenAIServerModel
 from rich.panel import Panel
 
-from .ui import console
-from .debug import print_debug
+from sophy.interface.ui import console
+from sophy.utils.debug import print_debug
 
 
 class ThinkingModel(OpenAIServerModel):
