@@ -143,3 +143,18 @@ async def pure_handler(handler: CommandHandler):
     if not task:
         return CommandResult(consumed=True)
     return CommandResult(consumed=False, task=task, inject_system_prompt=False)
+
+
+@command_registry.add(cmd="/telegram", description="connect Telegram bot")
+async def telegram_handler(handler: CommandHandler):
+    import asyncio
+    from sophy.interface.base import get_frontend
+    frontend = get_frontend()
+
+    if len(frontend.backends) > 1:
+        console.print("[dim]Telegram is already connected.[/dim]")
+        return
+
+    from sophy.__main__ import start_telegram
+    loop = asyncio.get_running_loop()
+    await start_telegram(frontend, loop)

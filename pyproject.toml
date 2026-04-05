@@ -11,6 +11,7 @@ dependencies = [
     "smolagents[toolkit,openai]",
     "prompt_toolkit",
     "questionary",
+    "aiogram>=3.0",
 ]
 
 [project.scripts]
@@ -24,4 +25,8 @@ where = ["src"]
 
 [[tool.mypy.overrides]]
 module = "smolagents.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "aiogram.*"
 ignore_missing_imports = true

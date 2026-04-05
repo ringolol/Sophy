@@ -1,4 +1,5 @@
 import asyncio
+import os
 import time
 import traceback
 
@@ -61,6 +62,54 @@ async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_
         print_footer(solver_agent)
 
 
+async def start_telegram(frontend: FrontendRouter, loop: asyncio.AbstractEventLoop) -> None:
+    """Start Telegram backend and add it to the frontend router."""
+    from sophy.interface.telegram_backend import TelegramBackend
+
+    token = os.environ.get("SOPHY_TELEGRAM_TOKEN", "")
+    chat_id_str = os.environ.get("SOPHY_TELEGRAM_CHAT_ID", "")
+
+    if not token:
+        console.print("[red]SOPHY_TELEGRAM_TOKEN env var not set.[/red]")
+        return
+    if not chat_id_str:
+        console.print("[red]SOPHY_TELEGRAM_CHAT_ID env var not set.[/red]")
+        return
+
+    try:
+        chat_id = int(chat_id_str)
+    except ValueError:
+        console.print("[red]SOPHY_TELEGRAM_CHAT_ID must be an integer.[/red]")
+        return
+
+    tg = TelegramBackend(token, chat_id, loop)
+    frontend.add_backend(tg)
+    await tg.start_polling()
+    console.print("[green]Telegram bot connected.[/green]")
+
+
+async def _get_cli_input(prompt_session, prompt_decor, completer):
+    """Get input from CLI. Returns (task_str, 'cli') or raises KeyboardInterrupt."""
+    with patch_stdout(raw=True):
+        task = await prompt_session.prompt_async(
+            prompt_decor,
+            multiline=True,
+            completer=completer,
+            complete_while_typing=True,
+        )
+    return task.strip()
+
+
+async def _get_telegram_input(frontend: FrontendRouter) -> str:
+    """Get input from any non-CLI backend (Telegram). Waits forever."""
+    # Get input from the second backend (index 1 = Telegram)
+    if len(frontend.backends) < 2:
+        # No Telegram backend, block forever
+        await asyncio.Event().wait()
+        return ""  # unreachable
+    return await frontend.backends[1].get_input()
+
+
 async def async_agent_loop():
     loop = asyncio.get_running_loop()
     set_main_loop(loop)
@@ -68,12 +117,17 @@ async def async_agent_loop():
     # Initialize frontend router with CLI backend
     frontend = FrontendRouter()
     frontend.set_loop(loop)
-    frontend.add_backend(CLIBackend())
+    cli_backend = CLIBackend()
+    frontend.add_backend(cli_backend)
     set_frontend(frontend)
 
     app_state = init_app()
     app_state.frontend = frontend
     ctx = await initialize_agents()
+
+    # Start Telegram if requested
+    if ctx.telegram:
+        await start_telegram(frontend, loop)
 
     command_handler, prompt_session, completer = setup_cli(ctx, app_state)
     prompt_decor = get_prompt_decor(app_state.is_solver_busy)
@@ -82,22 +136,57 @@ async def async_agent_loop():
     console.print(f"[dim][bold]Model:[/bold] {ctx.solver_preset.label}[/dim]")
     await command_handler.handle_command("/resume")
 
+    # Persistent futures — never cancel the CLI prompt, reuse across iterations
+    cli_fut: asyncio.Future[str] | None = None
+    tg_fut: asyncio.Future[str] | None = None
+
     while True:
+        task = None
+        source_backend = cli_backend
+        has_telegram = len(frontend.backends) > 1
+
         try:
-            with patch_stdout(raw=True):
-                task = await prompt_session.prompt_async(
-                    prompt_decor,
-                    multiline=True,
-                    completer=completer,
-                    complete_while_typing=True
+            if not has_telegram:
+                # CLI-only mode (original behavior)
+                task = await _get_cli_input(prompt_session, prompt_decor, completer)
+            else:
+                # Ensure both futures are alive
+                if cli_fut is None or cli_fut.done():
+                    cli_fut = asyncio.ensure_future(
+                        _get_cli_input(prompt_session, prompt_decor, completer)
+                    )
+                if tg_fut is None or tg_fut.done():
+                    tg_fut = asyncio.ensure_future(_get_telegram_input(frontend))
+
+                # Race — do NOT cancel the loser
+                done, _pending = await asyncio.wait(
+                    {cli_fut, tg_fut}, return_when=asyncio.FIRST_COMPLETED
                 )
-                task = task.strip()
+
+                winner = done.pop()
+                if winner is tg_fut:
+                    source_backend = frontend.backends[1]
+                    tg_fut = None  # consumed, will recreate next iteration
+                else:
+                    cli_fut = None  # consumed, will recreate next iteration
+                task = winner.result()
         except KeyboardInterrupt:
             if app_state.is_solver_busy.is_set():
                 interrupt_agent(app_state)
             else:
                 exit(0)
             continue
+
+        if not task:
+            continue
+
+        # Set active backend for this task (confirmations will go here)
+        frontend.active_backend = source_backend
+
+        # Mirror the user prompt to the other backends
+        for b in frontend.backends:
+            if b is not source_backend:
+                b.send_text(f"❯ {task}")
 
         inject_system_prompt = True
         if task in command_registry.commands:

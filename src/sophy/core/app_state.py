@@ -21,10 +21,16 @@ class AppState:
     frontend: FrontendRouter | None = None
 
 
+_current_app_state: AppState | None = None
+
+
 def init_app() -> AppState:
+    global _current_app_state
+
     set_guard_config(load_guard_config())
 
     state = AppState()
     set_history_provider(lambda *args, **kwargs: state.session.get_summary(*args, **kwargs))
+    _current_app_state = state
 
     return state

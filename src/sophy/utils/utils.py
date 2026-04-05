@@ -21,4 +21,5 @@ def parse_arguments():
     parser.add_argument("--api_base", type=str, default=None, help="API base URL for the model")
     parser.add_argument("--api_key", type=str, default=None, help="API key for the model")
     parser.add_argument("--model", type=str, default=None, help="Model ID to use")
+    parser.add_argument("--telegram", action="store_true", help="Start with Telegram bot connected")
     return parser.parse_args()

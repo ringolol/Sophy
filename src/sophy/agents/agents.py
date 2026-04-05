@@ -17,6 +17,7 @@ class AgentContext:
     solver_preset: ModelPreset
     available_presets: list
     config: Config
+    telegram: bool = False
 
 
 async def initialize_agents() -> AgentContext:
@@ -49,6 +50,7 @@ async def initialize_agents() -> AgentContext:
         solver_preset=solver_preset,
         available_presets=available_presets,
         config=config,
+        telegram=args.telegram,
     )
 
 
