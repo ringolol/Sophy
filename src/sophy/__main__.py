@@ -7,7 +7,7 @@ from smolagents.memory import ActionStep, Timing
 
 from sophy.agents.agents import initialize_agents, run_agent_sync, interrupt_agent
 from sophy.core.app_state import init_app
-from sophy.core.context_compression import maybe_compress
+from sophy.core.session_utils.context_compression import maybe_compress
 from sophy.interface.cli import setup_cli, get_prompt_decor
 from sophy.interface.commands import command_registry
 from sophy.utils.guards import ToolDeniedException
