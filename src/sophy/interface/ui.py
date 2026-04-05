@@ -110,36 +110,48 @@ _PREVIEWERS = {
 }
 
 
-def command_preview(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        name = wrapper.__name__
+def command_preview(result_preview: bool = False):
+    def command_preview_decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal result_preview
 
-        previewer = _PREVIEWERS.get(name)
-        if previewer:
-            console.print(f"[yellow]{name}:[/yellow]")
-            old_lines, new_lines, path = previewer(kwargs)
-            if old_lines is not None:
-                _print_diff(old_lines, new_lines, path)
-            else:
-                console.print(f"[green](new file: {path})[/green]")
-        elif args or kwargs:
-            all_args = list(args) + list(kwargs.values())
-            if len(all_args) == 1:
-                arg_val = all_args[0]
-                console.print(f"[yellow]{name}[/yellow]: {arg_val}")
-            else:
-                console.print(f"[yellow]{name}[/yellow]")
-                for key, value in kwargs.items():
-                    console.print(f"   - [cyan]{key}[/cyan]: {value}")
-                for i, arg in enumerate(args):
-                    console.print(f"   - [cyan]arg{i}[/cyan]: {arg}")
+            name = wrapper.__name__
 
-        result = func(*args, **kwargs)
-        print_debug(f"Result:\n{result}", debug_name="TOOLS' RESULT")
+            previewer = _PREVIEWERS.get(name)
+            if previewer:
+                console.print(f"[yellow]{name}:[/yellow]")
+                old_lines, new_lines, path = previewer(kwargs)
+                if old_lines is not None:
+                    _print_diff(old_lines, new_lines, path)
+                else:
+                    console.print(f"[green](new file: {path})[/green]")
+            elif args or kwargs:
+                all_args = list(args) + list(kwargs.values())
+                if len(all_args) == 1:
+                    arg_val = all_args[0]
+                    console.print(f"[yellow]{name}[/yellow]: {arg_val}")
+                else:
+                    console.print(f"[yellow]{name}[/yellow]")
+                    for key, value in kwargs.items():
+                        console.print(f"   - [cyan]{key}[/cyan]: {value}")
+                    for i, arg in enumerate(args):
+                        console.print(f"   - [cyan]arg{i}[/cyan]: {arg}")
 
-        return result
-    return wrapper
+            result = func(*args, **kwargs)
+            if result_preview:
+                res_preview = Syntax(
+                    f"\n```console\n{result}\n```",
+                    "markdown",
+                    theme='monokai',
+                    word_wrap=True
+                )
+                console.print(res_preview)
+            print_debug(f"Result:\n{result}", debug_name="TOOLS' RESULT")
+
+            return result
+        return wrapper
+    return command_preview_decorator
 
 
 def final_preview(func):

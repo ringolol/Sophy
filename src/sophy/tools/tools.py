@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore")
 
 
 @tool
-@command_preview
+@command_preview()
 def get_conversation_history(last_n: int = 5) -> str:
     """Returns recent conversation history.
 
@@ -35,7 +35,7 @@ def get_conversation_history(last_n: int = 5) -> str:
 
 @tool
 @path_expand
-@command_preview
+@command_preview()
 def read_file(file_path: str) -> str:
     """Reads a file.
 
@@ -46,7 +46,7 @@ def read_file(file_path: str) -> str:
         return f.read()
 
 @tool
-@command_preview
+@command_preview()
 @confirm
 @path_expand
 def write_new_file(file_path: str, content: str) -> str:
@@ -79,7 +79,7 @@ def write_new_file(file_path: str, content: str) -> str:
 
 @tool
 @path_expand
-@command_preview
+@command_preview()
 def search_files(pattern: str, directory: str = ".") -> str:
     """Glob search for files.
 
@@ -94,7 +94,7 @@ def search_files(pattern: str, directory: str = ".") -> str:
 
 @tool
 @path_expand
-@command_preview
+@command_preview()
 def search_content(text_pattern: str, directory: str = ".", file_pattern: str = "*") -> str:
     """Searches file contents for a text pattern (grep).
 
@@ -126,7 +126,7 @@ def search_content(text_pattern: str, directory: str = ".", file_pattern: str = 
     return "\n".join(results)
 
 @tool
-@command_preview
+@command_preview(result_preview=True)
 @confirm
 @path_expand
 def run_command(command: str) -> str:
@@ -154,7 +154,7 @@ def run_command(command: str) -> str:
     return output or "(no output)"
 
 @tool
-@command_preview
+@command_preview()
 @confirm
 @path_expand
 def edit_file(file_path: str, old_content: str, new_content: str) -> str:
@@ -213,7 +213,7 @@ def ask_user(question: str) -> str:
 
 @tool
 @path_expand
-@command_preview
+@command_preview()
 def list_directory(path: str = ".") -> str:
     """Lists directory contents.
 
@@ -243,7 +243,7 @@ def list_directory(path: str = ".") -> str:
 
 @tool
 @path_expand
-@command_preview
+@command_preview()
 def get_tree(path: str = ".", max_depth: int = 5) -> str:
     """Returns a directory tree view with depth limit.
 
@@ -281,7 +281,7 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
     return _build_tree(path, 0, '')
 
 @tool
-@command_preview
+@command_preview()
 @confirm
 @path_expand
 def delete_file(file_path: str) -> str:
@@ -301,7 +301,7 @@ def delete_file(file_path: str) -> str:
         return f"Error deleting file: {str(e)}"
 
 @tool
-@command_preview
+@command_preview()
 @confirm
 @path_expand
 def move_file(source: str, destination: str) -> str:
@@ -340,7 +340,7 @@ def dangerous_python_interpreter(code: str) -> str:
         return (output + f"\nError: {e}") if output else f"Error: {e}"
 
 @tool
-@command_preview
+@command_preview(result_preview=True)
 def execute_python(code: str) -> str:
     """Execute Python code.
 
@@ -357,7 +357,7 @@ def execute_python(code: str) -> str:
 # Sub Agents
 
 @tool
-@command_preview
+@command_preview()
 def explorer(task: str) -> str:
     """Use this for ANY task that involves reading, searching, or navigating files! Unless you already know the exact file path AND only need one file.
 

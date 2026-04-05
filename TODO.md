@@ -6,9 +6,9 @@
 
 ### [done] /pure (no prompt injection)
 
-### python/bash output
+### [done] The issue is that the `run_command` tool I am using does not perform shell expansion (like expanding `~` or `$HOME`)
 
-### The issue is that the `run_command` tool I am using does not perform shell expansion (like expanding `~` or `$HOME`)
+### [done] python/bash output
 
 ### telegram
 
