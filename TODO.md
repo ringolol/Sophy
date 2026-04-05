@@ -8,6 +8,8 @@
 
 ### python/bash output
 
+### The issue is that the `run_command` tool I am using does not perform shell expansion (like expanding `~` or `$HOME`)
+
 ### telegram
 
 ### raspberry sever + docker

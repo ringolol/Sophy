@@ -141,7 +141,8 @@ def run_command(command: str) -> str:
         text=True,
         encoding="utf-8",
         errors="replace",
-        timeout=30
+        timeout=30,
+        shell=True,  # to expand user path (dangerous)
     )
     output = ""
     if result.stdout:

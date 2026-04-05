@@ -2,7 +2,8 @@
   "allowed_command_patterns": [
     "^git (status|diff|log|show|branch)",
     "^grep ",
-    "^sed "
+    "^sed ",
+    "^ls "
   ],
   "custom_commands": [
       {
@@ -29,14 +30,6 @@
       "explorer": true
     },
     {
-      "label": "Gemma 4 26B",
-      "model_id": "gemma-4-26b-a4b-it",
-      "context": 256000,
-      "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
-      "api_key": "$GEMINI_API_KEY",
-      "tools": true
-    },
-    {
       "label": "Gemma 3 27B",
       "model_id": "gemma-3-27b-it",
       "context": 128000,
@@ -47,6 +40,14 @@
       "explorer": true
     },
     {
+      "label": "Gemma 4 26B",
+      "model_id": "gemma-4-26b-a4b-it",
+      "context": 256000,
+      "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "api_key": "$GEMINI_API_KEY",
+      "tools": true
+    },
+    {
       "label": "Gemma 3 12B",
       "model_id": "gemma-3-12b-it",
       "context": 128000,
@@ -55,14 +56,6 @@
       "tools": false,
       "system_prompt": false,
       "explorer": true
-    },
-    {
-      "label": "Gemini 2.5 Flash Lite",
-      "model_id": "gemini-2.5-flash-lite",
-      "context": 1048576,
-      "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
-      "api_key": "$GEMINI_API_KEY",
-      "tools": true
     },
     {
       "label": "Gemini 3 Flash",
@@ -81,20 +74,20 @@
       "tools": true
     },
     {
+      "label": "Gemini 2.5 Flash Lite",
+      "model_id": "gemini-2.5-flash-lite",
+      "context": 1048576,
+      "api_base": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "api_key": "$GEMINI_API_KEY",
+      "tools": true
+    },
+    {
       "label": "Qwen 3.5 35B (Ollama)",
       "model_id": "qwen3.5:35b-a3b",
       "context": 128000,
       "api_base": "http://192.168.0.107:11434/v1",
       "api_key": "ollama",
       "tools": true
-    },
-    {
-      "label": "DeepSeek 3.2",
-      "model_id": "gpt://b1gdfe7f2of853ggtj6r/deepseek-v32/latest",
-      "context": 131072,
-      "api_base": "https://ai.api.cloud.yandex.net/v1",
-      "api_key": "$YANDEX_API_KEY",
-      "tools": false
     }
   ]
 }

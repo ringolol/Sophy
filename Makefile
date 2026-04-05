@@ -11,3 +11,6 @@ install-dev:
 	else \
 		pip install -e . ; \
 	fi
+
+update-config:
+	cp .sophy/config.json ~/.sophy/config.json
