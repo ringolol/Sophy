@@ -7,6 +7,11 @@ from sophy.interface.ui import console
 
 _guard_config = None
 _COMPOUND_CMD_RE = re.compile(r'(\|\||&&|;|\||&|`|\$\(|\$\{|[<>()\n])')
+
+
+def is_compound_command(cmd: str) -> bool:
+    """Check if a command string contains shell operators."""
+    return bool(_COMPOUND_CMD_RE.search(cmd))
 _AUTO_EDIT_TOOLS = frozenset({"edit_file", "write_new_file"})
 
 
@@ -34,7 +39,7 @@ def _can_auto_approve(fn_name, kwargs):
     # Commands: auto-approve only simple commands matching allowed patterns
     if fn_name == "run_command" and _guard_config.allowed_command_patterns:
         cmd = kwargs.get("command", "")
-        if not _COMPOUND_CMD_RE.search(cmd):
+        if not is_compound_command(cmd):
             for pattern in _guard_config.allowed_command_patterns:
                 if pattern.match(cmd):
                     return True

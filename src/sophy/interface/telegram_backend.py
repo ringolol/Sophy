@@ -74,6 +74,12 @@ class TelegramBackend(InterfaceBackend):
         self._select_queue: asyncio.Queue[str | None] = asyncio.Queue()
 
         self._polling_task: asyncio.Task | None = None  # type: ignore[type-arg]
+
+        self._pending_full: dict[int, str] = {}
+        self._full_id_counter = 0
+        self._last_confirm_msg: Message | None = None
+        self._last_confirm_text: str | None = None
+
         self._register_handlers()
 
     def _register_handlers(self):
@@ -112,6 +118,8 @@ class TelegramBackend(InterfaceBackend):
 
             if data in ("confirm_yes", "confirm_no"):
                 self._confirm_queue.put_nowait(data == "confirm_yes")
+                self._last_confirm_msg = None
+                self._last_confirm_text = None
                 if callback.message:
                     label = "Yes" if data == "confirm_yes" else "No"
                     try:
@@ -120,6 +128,23 @@ class TelegramBackend(InterfaceBackend):
                         )
                     except Exception:
                         print_debug(traceback.format_exc(), debug_name="TG EDIT CONFIRM")
+            elif data.startswith("show_full_"):
+                full_id = int(data.removeprefix("show_full_"))
+                full_text = self._pending_full.pop(full_id, None)
+                if callback.message:
+                    try:
+                        await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore[union-attr]
+                    except Exception:
+                        print_debug(traceback.format_exc(), debug_name="TG EDIT SHOW_FULL")
+                if full_text:
+                    await self._send(full_text)
+                    # Resend confirm buttons so they stay at the bottom
+                    if self._last_confirm_msg and self._last_confirm_text:
+                        try:
+                            await self._last_confirm_msg.delete()
+                        except Exception:
+                            pass
+                        await self._resend_confirm(self._last_confirm_text)
             elif data.startswith("select_"):
                 self._select_queue.put_nowait(data.removeprefix("select_"))
                 if callback.message:
@@ -142,6 +167,13 @@ class TelegramBackend(InterfaceBackend):
         # Skip horizontal rules — console.rule() renders as long ─ lines
         if all(c in "─ " for c in text):
             return
+
+        m = _CODE_OPEN_RE.match(text)
+        is_code = m is not None and text.endswith(_CODE_CLOSE)
+        if is_code and len(text) > TELEGRAM_MSG_LIMIT:
+            asyncio.run_coroutine_threadsafe(self._send_code_preview(text, m.group(0)), self._loop)
+            return
+
         asyncio.run_coroutine_threadsafe(self._send(text), self._loop)
 
     async def _set_bot_commands(self):
@@ -192,6 +224,46 @@ class TelegramBackend(InterfaceBackend):
                 except Exception:
                     print_debug(traceback.format_exc(), debug_name="TG SEND FALLBACK")
 
+    async def _send_code_preview(self, full_text: str, tag_open: str):
+        """Send a truncated code preview with a 'Show full' button."""
+        self._full_id_counter += 1
+        full_id = self._full_id_counter
+        self._pending_full[full_id] = full_text
+
+        # Extract code content, truncate to fit in one message
+        code = full_text[len(tag_open):-len(_CODE_CLOSE)]
+        max_code_len = TELEGRAM_MSG_LIMIT - len(tag_open) - len(_CODE_CLOSE) - 4  # 4 for "\n..."
+        truncated = code[:max_code_len]
+        # Cut at last newline for clean break
+        last_nl = truncated.rfind('\n')
+        if last_nl > 0:
+            truncated = truncated[:last_nl]
+        preview = f"{tag_open}{truncated}\n...{_CODE_CLOSE}"
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="Show full", callback_data=f"show_full_{full_id}"),
+        ]])
+        try:
+            await self._bot.send_message(
+                self._chat_id, preview, parse_mode=ParseMode.HTML, reply_markup=keyboard
+            )
+        except Exception:
+            print_debug(traceback.format_exc(), debug_name="TG SEND PREVIEW")
+            # Fallback: send full text split into chunks
+            self._pending_full.pop(full_id, None)
+            await self._send(full_text)
+
+    async def _resend_confirm(self, text: str):
+        """Resend confirmation buttons."""
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="Yes", callback_data="confirm_yes"),
+            InlineKeyboardButton(text="No", callback_data="confirm_no"),
+        ]])
+        msg = await self._bot.send_message(
+            self._chat_id, text, reply_markup=keyboard
+        )
+        self._last_confirm_msg = msg
+
     async def _send_plain(self, text: str):
         """Send a plain text message, splitting if needed."""
         for chunk in _split_message(text):
@@ -210,14 +282,9 @@ class TelegramBackend(InterfaceBackend):
         while not self._confirm_queue.empty():
             self._confirm_queue.get_nowait()
 
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="Yes", callback_data="confirm_yes"),
-            InlineKeyboardButton(text="No", callback_data="confirm_no"),
-        ]])
         clean_msg = re.sub(r'\[y/n\]:?\s*$', '', message, flags=re.IGNORECASE).strip()
-        await self._bot.send_message(
-            self._chat_id, clean_msg, reply_markup=keyboard
-        )
+        self._last_confirm_text = clean_msg
+        await self._resend_confirm(clean_msg)
         return await self._confirm_queue.get()
 
     _SELECT_MAX_BUTTONS = 20
