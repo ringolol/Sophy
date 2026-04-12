@@ -22,26 +22,20 @@ class CLIBackend(InterfaceBackend):
         def _ask():
             return input("❯ ")
 
-        async def _run():
-            import sys
-            sys.stdout.flush()
-            await asyncio.sleep(0.21)
-            return await run_in_terminal(_ask, in_executor=False)
-
-        return await _run()
+        import sys
+        sys.stdout.flush()
+        await asyncio.sleep(0.21)
+        return await run_in_terminal(_ask, in_executor=True)
 
     async def prompt_confirm(self, message: str) -> bool:
-        def _ask():
-            return input(message)
-
-        async def _run():
-            import sys
-            sys.stdout.flush()
-            await asyncio.sleep(0.21)
-            return await run_in_terminal(_ask, in_executor=False)
+        import sys
+        sys.stdout.flush()
+        await asyncio.sleep(0.21)
 
         while True:
-            answer = (await _run()).strip().lower()
+            answer = (await run_in_terminal(
+                lambda: input(message), in_executor=True
+            )).strip().lower()
             if answer in ("y", "n"):
                 return answer == "y"
 
@@ -77,14 +71,6 @@ class CLIBackend(InterfaceBackend):
             console.print(f"[{style}]{text}[/{style}]")
         else:
             console.print(text)
-
-    def send_code(self, code: str, language: str = "") -> None:
-        from rich.syntax import Syntax
-        console.print(Syntax(code, language or "text", theme="monokai", word_wrap=True))
-
-    def send_diff(self, diff_text: str) -> None:
-        from rich.syntax import Syntax
-        console.print(Syntax(diff_text, "diff", theme="monokai", word_wrap=True))
 
     def send_rule(self) -> None:
         console.rule(style="dim")

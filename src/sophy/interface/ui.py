@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import difflib
+import html
 
 from io import StringIO
 
@@ -8,7 +9,40 @@ from rich.console import Console
 from rich.syntax import Syntax
 from prompt_toolkit.application import run_in_terminal
 
+from pygments.lexers import guess_lexer
+
 from sophy.utils.debug import print_debug
+
+# Pygments alias -> Prism.js/libprisma alias (Telegram uses libprisma)
+_PYGMENTS_TO_PRISM = {
+    "python3": "python",
+    "py": "python",
+    "js": "javascript",
+    "ts": "typescript",
+    "sh": "bash",
+    "zsh": "bash",
+    "objc": "objectivec",
+    "posh": "powershell",
+    "rb": "ruby",
+    "cs": "csharp",
+    "hs": "haskell",
+    "kt": "kotlin",
+    "tex": "latex",
+}
+
+# Pygments names that don't map to any real language in Prism.js
+_PRISM_IGNORE = {"text", "output", "pycon", "pytb", "teratermmacro"}
+
+
+def _guess_language(code: str) -> str:
+    try:
+        lexer = guess_lexer(code)
+        name = lexer.aliases[0]
+    except Exception:
+        return ""
+    if name in _PRISM_IGNORE:
+        return ""
+    return _PYGMENTS_TO_PRISM.get(name, name)
 
 
 class ObservableConsole(Console):
@@ -174,9 +208,12 @@ def command_preview(result_preview: bool = False):
 
             result = func(*args, **kwargs)
             if result_preview:
+                escaped_result = html.escape(str(result))
+                lang = _guess_language(str(result))
+                code_tag = f'<code class="language-{lang}">' if lang else "<code>"
                 res_preview = Syntax(
-                    f"\n```console\n{result}\n```",
-                    "markdown",
+                    f"\n<pre>{code_tag}\n{escaped_result}\n</code></pre>",
+                    "html",
                     theme='monokai',
                     word_wrap=True
                 )

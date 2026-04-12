@@ -28,14 +28,6 @@ class InterfaceBackend(ABC):
         """Send plain or styled text to the user."""
 
     @abstractmethod
-    def send_code(self, code: str, language: str = "") -> None:
-        """Send a code block."""
-
-    @abstractmethod
-    def send_diff(self, diff_text: str) -> None:
-        """Send a unified diff."""
-
-    @abstractmethod
     def send_rule(self) -> None:
         """Send a horizontal separator."""
 
@@ -90,10 +82,22 @@ class FrontendRouter:
         return await self.active_backend.get_input()
 
     async def prompt_confirm(self, message: str) -> bool:
-        return await self.active_backend.prompt_confirm(message)
+        if len(self.backends) <= 1:
+            return await self.active_backend.prompt_confirm(message)
+
+        # Race all backends — first to respond wins.
+        # Don't cancel losers: CLI's input() can't be safely cancelled.
+        futs = [asyncio.ensure_future(b.prompt_confirm(message)) for b in self.backends]
+        done, _ = await asyncio.wait(futs, return_when=asyncio.FIRST_COMPLETED)
+        return done.pop().result()
 
     async def prompt_select(self, title: str, choices: list[dict]) -> dict | None:
-        return await self.active_backend.prompt_select(title, choices)
+        if len(self.backends) <= 1:
+            return await self.active_backend.prompt_select(title, choices)
+
+        futs = [asyncio.ensure_future(b.prompt_select(title, choices)) for b in self.backends]
+        done, _ = await asyncio.wait(futs, return_when=asyncio.FIRST_COMPLETED)
+        return done.pop().result()
 
     # --- Sync bridges for calling from agent thread ---
 
@@ -142,14 +146,6 @@ class FrontendRouter:
     def send_text(self, text: str, style: str = "") -> None:
         for b in self.backends:
             b.send_text(text, style)
-
-    def send_code(self, code: str, language: str = "") -> None:
-        for b in self.backends:
-            b.send_code(code, language)
-
-    def send_diff(self, diff_text: str) -> None:
-        for b in self.backends:
-            b.send_diff(diff_text)
 
     def send_rule(self) -> None:
         for b in self.backends:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import re
 import traceback
 
@@ -15,25 +16,44 @@ from sophy.utils.debug import print_debug
 TELEGRAM_MSG_LIMIT = 4096
 
 
-def _escape_md(text: str) -> str:
-    """Escape special chars for Telegram MarkdownV2."""
-    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
+
+_CODE_OPEN_RE = re.compile(r'^<pre><code(?:\s[^>]*)?>')
+_CODE_CLOSE = "</code></pre>"
 
 
 def _split_message(text: str, limit: int = TELEGRAM_MSG_LIMIT) -> list[str]:
     """Split a message into chunks that fit Telegram's limit."""
+
     if len(text) <= limit:
         return [text]
+
+    # Detect <pre><code ...> wrapper (with optional class attribute)
+    m = _CODE_OPEN_RE.match(text)
+    is_code = m is not None and text.endswith(_CODE_CLOSE)
+
+    if is_code:
+        tag_open = m.group(0)
+        tag_overhead = len(tag_open) + len(_CODE_CLOSE)
+        limit -= tag_overhead
+        text = text[len(tag_open):-len(_CODE_CLOSE)]
+    else:
+        tag_open = ""
+
+    def try_wrap(s: str) -> str:
+        if not is_code:
+            return s
+        return f"{tag_open}{s}{_CODE_CLOSE}"
+
     chunks = []
     while text:
         if len(text) <= limit:
-            chunks.append(text)
+            chunks.append(try_wrap(text))
             break
         # Try to split at newline
         split_at = text.rfind('\n', 0, limit)
         if split_at == -1:
             split_at = limit
-        chunks.append(text[:split_at])
+        chunks.append(try_wrap(text[:split_at]))
         text = text[split_at:].lstrip('\n')
     return chunks
 
@@ -122,7 +142,7 @@ class TelegramBackend(InterfaceBackend):
         # Skip horizontal rules — console.rule() renders as long ─ lines
         if all(c in "─ " for c in text):
             return
-        asyncio.run_coroutine_threadsafe(self._send_plain(text), self._loop)
+        asyncio.run_coroutine_threadsafe(self._send(text), self._loop)
 
     async def _set_bot_commands(self):
         """Register Sophy commands in Telegram's command menu."""
@@ -149,7 +169,7 @@ class TelegramBackend(InterfaceBackend):
         self._polling_task = asyncio.create_task(
             self._dp.start_polling(self._bot, handle_signals=False)
         )
-        await self._send("Bot connected\\.")
+        await self._send("Bot connected.")
 
     async def stop(self):
         if self._polling_task:
@@ -157,17 +177,17 @@ class TelegramBackend(InterfaceBackend):
         await self._bot.session.close()
 
     async def _send(self, text: str):
-        """Send a MarkdownV2 message, splitting if needed."""
+        """Send an HTML message, splitting if needed."""
         for chunk in _split_message(text):
             try:
                 await self._bot.send_message(
-                    self._chat_id, chunk, parse_mode=ParseMode.MARKDOWN_V2
+                    self._chat_id, chunk, parse_mode=ParseMode.HTML
                 )
             except Exception:
-                print_debug(traceback.format_exc(), debug_name="TG SEND MD")
-                # Fallback to plain text if markdown fails
+                print_debug(traceback.format_exc(), debug_name="TG SEND HTML")
+                # Fallback to plain text if HTML fails
                 try:
-                    plain = re.sub(r'\\(.)', r'\1', chunk)
+                    plain = re.sub(r'<[^>]+>', '', chunk)
                     await self._bot.send_message(self._chat_id, plain)
                 except Exception:
                     print_debug(traceback.format_exc(), debug_name="TG SEND FALLBACK")
@@ -232,16 +252,6 @@ class TelegramBackend(InterfaceBackend):
 
     def send_text(self, text: str, style: str = "") -> None:
         asyncio.run_coroutine_threadsafe(self._send_plain(text), self._loop)
-
-    def send_code(self, code: str, language: str = "") -> None:
-        escaped = _escape_md(code)
-        msg = f"```{_escape_md(language)}\n{escaped}\n```"
-        asyncio.run_coroutine_threadsafe(self._send(msg), self._loop)
-
-    def send_diff(self, diff_text: str) -> None:
-        escaped = _escape_md(diff_text)
-        msg = f"```diff\n{escaped}\n```"
-        asyncio.run_coroutine_threadsafe(self._send(msg), self._loop)
 
     def send_rule(self) -> None:
         return
