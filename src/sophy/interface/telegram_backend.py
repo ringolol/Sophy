@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import html
+import os
 import re
 import traceback
 
 from aiogram import Bot, Dispatcher, Router, F
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.enums import ParseMode
 
@@ -62,7 +64,9 @@ class TelegramBackend(InterfaceBackend):
     """InterfaceBackend implementation for Telegram using aiogram."""
 
     def __init__(self, token: str, chat_id: int, loop: asyncio.AbstractEventLoop):
-        self._bot = Bot(token=token)
+        proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+        session = AiohttpSession(proxy=proxy) if proxy else None
+        self._bot = Bot(token=token, session=session)
         self._dp = Dispatcher()
         self._router = Router()
         self._dp.include_router(self._router)

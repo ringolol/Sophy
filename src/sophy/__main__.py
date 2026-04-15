@@ -15,6 +15,7 @@ from sophy.interface.cli_backend import CLIBackend
 from sophy.interface.commands import command_registry
 from sophy.tools.guards import ToolDeniedException
 from sophy.interface.ui import console, set_main_loop, print_footer
+from sophy.utils.utils import parse_arguments
 
 
 async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_prompt):
@@ -114,6 +115,8 @@ async def async_agent_loop():
     loop = asyncio.get_running_loop()
     set_main_loop(loop)
 
+    args = parse_arguments()
+
     # Initialize frontend router with CLI backend
     frontend = FrontendRouter()
     frontend.set_loop(loop)
@@ -121,13 +124,13 @@ async def async_agent_loop():
     frontend.add_backend(cli_backend)
     set_frontend(frontend)
 
+    # Start Telegram early so it's available during model selection
+    if args.telegram:
+        await start_telegram(frontend, loop)
+
     app_state = init_app()
     app_state.frontend = frontend
-    ctx = await initialize_agents()
-
-    # Start Telegram if requested
-    if ctx.telegram:
-        await start_telegram(frontend, loop)
+    ctx = await initialize_agents(args)
 
     command_handler, prompt_session, completer = setup_cli(ctx, app_state)
     prompt_decor = get_prompt_decor(app_state.is_solver_busy)

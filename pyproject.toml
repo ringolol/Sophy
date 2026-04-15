@@ -12,6 +12,7 @@ dependencies = [
     "prompt_toolkit",
     "questionary",
     "aiogram>=3.0",
+    "aiohttp-socks",
 ]
 
 [project.scripts]

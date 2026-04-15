@@ -7,7 +7,6 @@ from smolagents.agents import MultiStepAgent
 from sophy.core.config import Config, ModelPreset, pick_model, load_config
 from sophy.utils.debug import print_debug
 from sophy.agents.agent_factory import make_model, make_solver_agent, make_explorer_agent
-from sophy.utils.utils import parse_arguments
 
 
 @dataclass
@@ -17,11 +16,9 @@ class AgentContext:
     solver_preset: ModelPreset
     available_presets: list
     config: Config
-    telegram: bool = False
 
 
-async def initialize_agents() -> AgentContext:
-    args = parse_arguments()
+async def initialize_agents(args) -> AgentContext:
     config = load_config()
 
     # get available presets
@@ -50,7 +47,6 @@ async def initialize_agents() -> AgentContext:
         solver_preset=solver_preset,
         available_presets=available_presets,
         config=config,
-        telegram=args.telegram,
     )
 
 
