@@ -15,6 +15,9 @@ dependencies = [
     "aiohttp-socks",
 ]
 
+[project.optional-dependencies]
+dev = ["ruff"]
+
 [project.scripts]
 sophy = "sophy:main"
 
@@ -31,3 +34,9 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "aiogram.*"
 ignore_missing_imports = true
+
+[tool.ruff.lint]
+select = ["I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sophy"]

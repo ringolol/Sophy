@@ -1,12 +1,31 @@
-import PIL.Image
-from smolagents.agents import ToolCallingAgent, CodeAgent, ActionStep, PlanningStep, FinalAnswerStep, ChatMessageStreamDelta, AgentError, AgentGenerationError, ActionOutput, Timing, handle_agent_output_types, RunResult, AgentMaxStepsError, TaskStep, TokenUsage, SystemPromptStep
-from typing import Generator, Any
 import time
+from typing import Any, Generator
+
+import PIL.Image
 from rich.text import Text
-from smolagents import BASE_BUILTIN_MODULES, LogLevel, LocalPythonExecutor
+from smolagents import BASE_BUILTIN_MODULES, LocalPythonExecutor, LogLevel
+from smolagents.agents import (
+    ActionOutput,
+    ActionStep,
+    AgentError,
+    AgentGenerationError,
+    AgentMaxStepsError,
+    ChatMessageStreamDelta,
+    CodeAgent,
+    FinalAnswerStep,
+    PlanningStep,
+    RunResult,
+    SystemPromptStep,
+    TaskStep,
+    Timing,
+    TokenUsage,
+    ToolCallingAgent,
+    handle_agent_output_types,
+)
 from smolagents.monitoring import YELLOW_HEX
 
 from sophy.interface.ui import console
+
 
 class CustomAgentMixin:
     def run(

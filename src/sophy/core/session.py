@@ -2,11 +2,11 @@ import asyncio
 import json
 import os
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
 from smolagents import MultiStepAgent, Panel
-from smolagents.memory import TaskStep, ActionStep, ToolCall
+from smolagents.memory import ActionStep, TaskStep, ToolCall
 from smolagents.monitoring import Timing, TokenUsage
 
 from sophy.interface.ui import console

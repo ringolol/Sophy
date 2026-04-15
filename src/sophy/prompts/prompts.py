@@ -1,12 +1,23 @@
 from enum import Enum
-from smolagents import FinalAnswerPromptTemplate, ManagedAgentPromptTemplate, PlanningPromptTemplate, PromptTemplates
 
-from sophy.tools.tools import TOOLS, EXPLORATION_TOOLS, SUB_AGENTS
-from sophy.prompts.prompts_data import (
-    DIRECT_PROMPT_TEMPLATE, ROLE_TASK_SOLVER,
-    DIRECT_CODE_PROMPT_TEMPLATE, ROLE_CODE_TASK_SOLVER,
-    ROLE_EXPLORER, EXPLORER_PROMPT_TEMPLATE, ROLE_CODE_EXPLORER, EXPLORER_CODE_PROMPT_TEMPLATE
+from smolagents import (
+    FinalAnswerPromptTemplate,
+    ManagedAgentPromptTemplate,
+    PlanningPromptTemplate,
+    PromptTemplates,
 )
+
+from sophy.prompts.prompts_data import (
+    DIRECT_CODE_PROMPT_TEMPLATE,
+    DIRECT_PROMPT_TEMPLATE,
+    EXPLORER_CODE_PROMPT_TEMPLATE,
+    EXPLORER_PROMPT_TEMPLATE,
+    ROLE_CODE_EXPLORER,
+    ROLE_CODE_TASK_SOLVER,
+    ROLE_EXPLORER,
+    ROLE_TASK_SOLVER,
+)
+from sophy.tools.tools import EXPLORATION_TOOLS, SUB_AGENTS, TOOLS
 
 
 class AgentRole(Enum):

@@ -1,15 +1,13 @@
 import asyncio
-import functools
 import difflib
+import functools
 import html
-
 from io import StringIO
 
+from prompt_toolkit.application import run_in_terminal
+from pygments.lexers import guess_lexer
 from rich.console import Console
 from rich.syntax import Syntax
-from prompt_toolkit.application import run_in_terminal
-
-from pygments.lexers import guess_lexer
 
 from sophy.utils.debug import print_debug
 

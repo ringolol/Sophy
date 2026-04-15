@@ -1,6 +1,7 @@
 import os
 import re
 
+
 def get_sophy_base_dir() -> str:
     """Returns the base directory for sophy (~/.sophy)."""
     return os.path.expanduser("~/.sophy")

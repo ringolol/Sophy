@@ -3,12 +3,11 @@ from __future__ import annotations
 import asyncio
 
 import questionary
-from questionary import Style
 from prompt_toolkit.application import run_in_terminal
+from questionary import Style
 
 from sophy.interface.base import InterfaceBackend
 from sophy.interface.ui import console
-
 
 _QUESTIONARY_STYLE = Style([("highlighted", "fg:cyan")])
 

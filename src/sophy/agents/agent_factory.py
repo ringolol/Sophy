@@ -1,14 +1,18 @@
 import typing
 
+from smolagents import LogLevel
+
+from sophy.agents.patches.patched_agents import CustomCodeAgent, CustomToolCallingAgent
+from sophy.agents.patches.patched_model import ThinkingModel
+from sophy.agents.patches.smolagents_patches import (
+    apply_explorer_monkey_patches,
+    apply_monkey_patches,
+)
 from sophy.core.config import ModelPreset
 from sophy.interface.ui import console
+from sophy.prompts.prompts import AgentRole, build_prompt
+from sophy.tools.tools import EXPLORATION_TOOLS, TOOLS
 from sophy.utils.utils import MAX_AGENT_STEPS, remind_final_answer
-from smolagents import LogLevel
-from sophy.agents.patches.patched_agents import CustomToolCallingAgent, CustomCodeAgent
-from sophy.prompts.prompts import build_prompt, AgentRole
-from sophy.tools.tools import TOOLS, EXPLORATION_TOOLS
-from sophy.agents.patches.smolagents_patches import apply_monkey_patches, apply_explorer_monkey_patches
-from sophy.agents.patches.patched_model import ThinkingModel
 
 
 def make_model(preset: ModelPreset) -> ThinkingModel:

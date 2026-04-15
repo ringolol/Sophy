@@ -1,8 +1,8 @@
 from prompt_toolkit import PromptSession
-from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.filters import Condition
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.key_binding import KeyBindings
 
 from sophy.interface.commands import CommandHandler, command_registry
 from sophy.interface.ui import console

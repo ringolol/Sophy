@@ -12,5 +12,8 @@ install-dev:
 		pip install -e . ; \
 	fi
 
+install-deps:
+	pip install -e ".[dev]"
+
 update-config:
 	cp .sophy/config.json ~/.sophy/config.json

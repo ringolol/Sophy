@@ -6,15 +6,15 @@ import traceback
 from prompt_toolkit.patch_stdout import patch_stdout
 from smolagents.memory import ActionStep, Timing
 
-from sophy.agents.agents import initialize_agents, run_agent_sync, interrupt_agent
+from sophy.agents.agents import initialize_agents, interrupt_agent, run_agent_sync
 from sophy.core.app_state import init_app
 from sophy.core.session_utils.context_compression import maybe_compress
 from sophy.interface.base import FrontendRouter, set_frontend
-from sophy.interface.cli import setup_cli, get_prompt_decor
+from sophy.interface.cli import get_prompt_decor, setup_cli
 from sophy.interface.cli_backend import CLIBackend
 from sophy.interface.commands import command_registry
+from sophy.interface.ui import console, print_footer, set_main_loop
 from sophy.tools.guards import ToolDeniedException
-from sophy.interface.ui import console, set_main_loop, print_footer
 from sophy.utils.utils import parse_arguments
 
 
@@ -46,24 +46,31 @@ async def run_agent(app_state, solver_agent, solver_preset, task, inject_system_
         observation_step = ActionStep(
             step_number=solver_agent.step_number,
             observations="[User stopped the last tool execution manually! Be attentive User could ask you to change something about the last task!]",
-            timing=Timing(start_time=time.time(), end_time=time.time())
+            timing=Timing(start_time=time.time(), end_time=time.time()),
         )
         solver_agent.memory.steps.append(observation_step)
         app_state.session.add_entry(
             task=task,
             result="[interrupted]",
             steps=solver_agent.memory.get_full_steps(),
-            tools_used=[tc.name for step in solver_agent.memory.steps if isinstance(step, ActionStep) and step.tool_calls for tc in step.tool_calls],
+            tools_used=[
+                tc.name
+                for step in solver_agent.memory.steps
+                if isinstance(step, ActionStep) and step.tool_calls
+                for tc in step.tool_calls
+            ],
         )
     except Exception:
-        console.print(f'[red]{traceback.format_exc()}[/red]')
+        console.print(f"[red]{traceback.format_exc()}[/red]")
     finally:
         app_state.is_solver_busy.clear()
         app_state.session.save_auto()
         print_footer(solver_agent)
 
 
-async def start_telegram(frontend: FrontendRouter, loop: asyncio.AbstractEventLoop) -> None:
+async def start_telegram(
+    frontend: FrontendRouter, loop: asyncio.AbstractEventLoop
+) -> None:
     """Start Telegram backend and add it to the frontend router."""
     from sophy.interface.telegram_backend import TelegramBackend
 
@@ -205,7 +212,13 @@ async def async_agent_loop():
             continue
 
         asyncio.create_task(
-            run_agent(app_state, ctx.solver_agent, ctx.solver_preset, task, inject_system_prompt)
+            run_agent(
+                app_state,
+                ctx.solver_agent,
+                ctx.solver_preset,
+                task,
+                inject_system_prompt,
+            )
         )
 
 

@@ -1,5 +1,5 @@
-from smolagents import OpenAIServerModel
 from rich.panel import Panel
+from smolagents import OpenAIServerModel
 
 from sophy.interface.ui import console
 from sophy.utils.debug import print_debug
@@ -13,7 +13,11 @@ class ThinkingModel(OpenAIServerModel):
         self.context_window = context_window
 
     def generate_stream(self, messages, stop_sequences=None, response_format=None, tools_to_call_from=None, **kwargs):
-        from smolagents.models import ChatMessageStreamDelta, ChatMessageToolCallStreamDelta, TokenUsage
+        from smolagents.models import (
+            ChatMessageStreamDelta,
+            ChatMessageToolCallStreamDelta,
+            TokenUsage,
+        )
         if self.context_window:
             kwargs["max_tokens"] = self.context_window
         completion_kwargs = self._prepare_completion_kwargs(

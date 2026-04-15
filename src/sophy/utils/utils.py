@@ -1,6 +1,6 @@
 import argparse
-from smolagents.memory import ActionStep
 
+from smolagents.memory import ActionStep
 
 MAX_AGENT_STEPS = 30
 

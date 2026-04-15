@@ -4,7 +4,6 @@ import re
 
 from sophy.interface.ui import console
 
-
 _guard_config = None
 _COMPOUND_CMD_RE = re.compile(r'(\|\||&&|;|\||&|`|\$\(|\$\{|[<>()\n])')
 

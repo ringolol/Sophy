@@ -1,11 +1,10 @@
+import json
 import os
 import re
-import json
 from dataclasses import dataclass, field
 
 from sophy.interface.ui import console
 from sophy.utils.paths import get_config_path
-
 
 DEFAULT_CONTEXT_WINDOW = 128000
 

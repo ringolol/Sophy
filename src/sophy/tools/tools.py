@@ -1,18 +1,22 @@
 import difflib
-import subprocess
-import shlex
-import os
 import glob as glob_module
+import os
+import shlex
+import subprocess
 import warnings
 
 from smolagents import tool
-from smolagents.default_tools import PythonInterpreterTool, DuckDuckGoSearchTool, VisitWebpageTool, FinalAnswerTool
+from smolagents.default_tools import (
+    DuckDuckGoSearchTool,
+    FinalAnswerTool,
+    PythonInterpreterTool,
+    VisitWebpageTool,
+)
 from smolagents.local_python_executor import InterpreterError
 
-from sophy.tools.guards import confirm, is_compound_command, path_expand
-from sophy.interface.ui import command_preview, final_preview, patch_tool
 from sophy.core.session_utils.history_provider import get_history_provider
-
+from sophy.interface.ui import command_preview, final_preview, patch_tool
+from sophy.tools.guards import confirm, is_compound_command, path_expand
 
 # supress tools' warnings
 warnings.filterwarnings("ignore")
@@ -31,6 +35,7 @@ def get_conversation_history(last_n: int = 5) -> str:
         return "No history provider configured."
     return history_provider(last_n)
 
+
 @tool
 @path_expand
 @command_preview()
@@ -42,6 +47,7 @@ def read_file(file_path: str) -> str:
     """
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
+
 
 @tool
 @command_preview()
@@ -66,14 +72,17 @@ def write_new_file(file_path: str, content: str) -> str:
 
     new_lines = content.splitlines(keepends=True)
 
-    diff = list(difflib.unified_diff(
-        original_lines,
-        new_lines,
-        fromfile=f"a/{file_path}" if exists else "/dev/null",
-        tofile=f"b/{file_path}",
-        lineterm=""
-    ))
+    diff = list(
+        difflib.unified_diff(
+            original_lines,
+            new_lines,
+            fromfile=f"a/{file_path}" if exists else "/dev/null",
+            tofile=f"b/{file_path}",
+            lineterm="",
+        )
+    )
     return f"Written {len(content)} chars to {file_path}\n" + "\n".join(diff)
+
 
 @tool
 @path_expand
@@ -90,10 +99,13 @@ def search_files(pattern: str, directory: str = ".") -> str:
         return "No files found."
     return "\n".join(matches[:50])
 
+
 @tool
 @path_expand
 @command_preview()
-def search_content(text_pattern: str, directory: str = ".", file_pattern: str = "*") -> str:
+def search_content(
+    text_pattern: str, directory: str = ".", file_pattern: str = "*"
+) -> str:
     """Searches file contents for a text pattern (grep).
 
     Args:
@@ -102,12 +114,15 @@ def search_content(text_pattern: str, directory: str = ".", file_pattern: str = 
         file_pattern: Glob pattern to filter files (e.g. "*.py"). Defaults to all files.
     """
     import re
+
     try:
         regex = re.compile(text_pattern)
     except re.error:
         regex = re.compile(re.escape(text_pattern))
     results = []
-    for file_path in glob_module.glob(os.path.join(directory, "**", file_pattern), recursive=True):
+    for file_path in glob_module.glob(
+        os.path.join(directory, "**", file_pattern), recursive=True
+    ):
         if not os.path.isfile(file_path):
             continue
         try:
@@ -116,12 +131,15 @@ def search_content(text_pattern: str, directory: str = ".", file_pattern: str = 
                     if regex.search(line):
                         results.append(f"{file_path}:{i}: {line.rstrip()}")
                         if len(results) >= 100:
-                            return "\n".join(results) + "\n... (truncated at 100 matches)"
+                            return (
+                                "\n".join(results) + "\n... (truncated at 100 matches)"
+                            )
         except (OSError, PermissionError):
             continue
     if not results:
         return "No matches found."
     return "\n".join(results)
+
 
 @tool
 @command_preview(result_preview=True)
@@ -137,7 +155,10 @@ def run_command(command: str) -> str:
     if use_shell:
         run_args: str | list[str] = command
     else:
-        run_args = [os.path.expanduser(arg) if arg.startswith("~") else arg for arg in shlex.split(command)]
+        run_args = [
+            os.path.expanduser(arg) if arg.startswith("~") else arg
+            for arg in shlex.split(command)
+        ]
     result = subprocess.run(
         run_args,
         capture_output=True,
@@ -155,6 +176,7 @@ def run_command(command: str) -> str:
     if result.returncode != 0:
         output += f"\n(exit code {result.returncode})"
     return output or "(no output)"
+
 
 @tool
 @command_preview()
@@ -185,7 +207,7 @@ def edit_file(file_path: str, old_content: str, new_content: str) -> str:
             new_file.splitlines(),
             fromfile=f"a/{file_path}",
             tofile=f"b/{file_path}",
-            lineterm=""
+            lineterm="",
         )
     )
 
@@ -204,8 +226,10 @@ def ask_user(question: str) -> str:
     """
     from sophy.interface.base import get_frontend
     from sophy.interface.ui import console
+
     console.print(f"[bold cyan]{question}[/bold cyan]")
     return get_frontend().get_input_sync().strip()
+
 
 @tool
 @path_expand
@@ -237,6 +261,7 @@ def list_directory(path: str = ".") -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+
 @tool
 @path_expand
 @command_preview()
@@ -247,34 +272,38 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
         path: directory path to generate tree for. Defaults to current directory.
         max_depth: maximum depth to traverse. Defaults to 5.
     """
-    def _build_tree(root, current_depth=0, prefix=''):
+
+    def _build_tree(root, current_depth=0, prefix=""):
         if current_depth > max_depth:
-            return prefix + '. . . (max depth reached)\n'
+            return prefix + ". . . (max depth reached)\n"
 
         try:
             entries = sorted(os.listdir(root))
         except (PermissionError, OSError) as e:
-            return prefix + f'Error: {str(e)}\n'
+            return prefix + f"Error: {str(e)}\n"
 
-        output = ''
+        output = ""
         for i, entry in enumerate(entries):
             full_path = os.path.join(root, entry)
-            is_last = (i == len(entries) - 1)
+            is_last = i == len(entries) - 1
             is_dir = os.path.isdir(full_path)
 
-            connector = '└── ' if is_last else '├── '
+            connector = "└── " if is_last else "├── "
 
             if is_dir:
-                output += prefix + connector + entry + '/\n'
+                output += prefix + connector + entry + "/\n"
                 if current_depth < max_depth:
-                    extension = '    ' if is_last else '│   '
-                    output += _build_tree(full_path, current_depth + 1, prefix + extension)
+                    extension = "    " if is_last else "│   "
+                    output += _build_tree(
+                        full_path, current_depth + 1, prefix + extension
+                    )
             else:
-                output += prefix + connector + entry + '\n'
+                output += prefix + connector + entry + "\n"
 
         return output
 
-    return _build_tree(path, 0, '')
+    return _build_tree(path, 0, "")
+
 
 @tool
 @command_preview()
@@ -295,6 +324,7 @@ def delete_file(file_path: str) -> str:
         return f"Error: Permission denied when deleting '{file_path}'."
     except OSError as e:
         return f"Error deleting file: {str(e)}"
+
 
 @tool
 @command_preview()
@@ -323,17 +353,19 @@ def move_file(source: str, destination: str) -> str:
 
 @confirm
 def dangerous_python_interpreter(code: str) -> str:
-    import io
     import contextlib
+    import io
+
     stdout = io.StringIO()
     try:
         with contextlib.redirect_stdout(stdout):
-            exec(compile(code, '<string>', 'exec'), {})
+            exec(compile(code, "<string>", "exec"), {})
         output = stdout.getvalue()
         return output if output else "(no output)"
     except Exception as e:
         output = stdout.getvalue()
         return (output + f"\nError: {e}") if output else f"Error: {e}"
+
 
 @tool
 @command_preview(result_preview=True)
@@ -344,13 +376,14 @@ def execute_python(code: str) -> str:
         code: Python code or expression to evaluate.
     """
     try:
-        result = PythonInterpreterTool(timeout_seconds=5*60).forward(code)
+        result = PythonInterpreterTool(timeout_seconds=5 * 60).forward(code)
         return result
     except InterpreterError:
         return dangerous_python_interpreter(code)
 
 
 # Sub Agents
+
 
 @tool
 @command_preview()

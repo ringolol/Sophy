@@ -6,10 +6,16 @@ import os
 import re
 import traceback
 
-from aiogram import Bot, Dispatcher, Router, F
+from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from aiogram.enums import ParseMode
+from aiogram.types import (
+    BotCommand,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
 from sophy.interface.base import InterfaceBackend
 from sophy.interface.ui import console

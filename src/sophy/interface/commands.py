@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
-from sophy.interface.ui import console, print_footer
-from sophy.core.session import Session, load_session, pick_session
-from sophy.agents.agent_factory import make_solver_agent, make_model
+
+from sophy.agents.agent_factory import make_model, make_solver_agent
 from sophy.core.config import pick_model
+from sophy.core.session import Session, load_session, pick_session
 from sophy.core.session_utils.context_compression import compress
+from sophy.interface.ui import console, print_footer
 from sophy.utils.debug import print_debug
+
 
 @dataclass
 class Command:
@@ -148,6 +150,7 @@ async def pure_handler(handler: CommandHandler):
 @command_registry.add(cmd="/telegram", description="connect Telegram bot")
 async def telegram_handler(handler: CommandHandler):
     import asyncio
+
     from sophy.interface.base import get_frontend
     frontend = get_frontend()
 

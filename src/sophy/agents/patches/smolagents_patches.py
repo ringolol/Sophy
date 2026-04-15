@@ -4,16 +4,16 @@ This module contains all monkey patches that customize the behavior of the smola
 """
 
 import re
-from smolagents.monitoring import AgentLogger, escape_code_brackets
-from smolagents.agents import ToolCall, ToolOutput, AgentImage, AgentAudio, LogLevel
-from smolagents.models import ChatMessage
-from rich.panel import Panel
-from rich.text import Text
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextvars import copy_context
 
-from sophy.utils.debug import is_debug
+from rich.panel import Panel
+from rich.text import Text
+from smolagents.agents import AgentAudio, AgentImage, LogLevel, ToolCall, ToolOutput
+from smolagents.models import ChatMessage
+from smolagents.monitoring import AgentLogger, escape_code_brackets
 
+from sophy.utils.debug import is_debug
 
 PANEL_COLORS = {
     "task": "#0DBC79",
@@ -183,8 +183,8 @@ def _make_patched_process_tool_calls(tool_color: str):
 def fix_malformed_code_tags():
     """Patch parse_code_blobs to strip malformed code blocks (<code></code>) from extracted code."""
 
-    import smolagents.utils as smol_utils
     import smolagents.agents as smol_agents
+    import smolagents.utils as smol_utils
 
     _original_parse = smol_utils.parse_code_blobs
 

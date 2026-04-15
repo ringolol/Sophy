@@ -1,10 +1,9 @@
 from smolagents.memory import ActionStep, TaskStep
 from smolagents.models import ChatMessage, MessageRole
 
+from sophy.core.config import ModelPreset
 from sophy.core.session import Session
 from sophy.interface.ui import console
-from sophy.core.config import ModelPreset
-
 
 SUMMARIZATION_PROMPT = (
     "Your task is to create a detailed summary of the conversation so far, "
