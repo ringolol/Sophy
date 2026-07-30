@@ -128,8 +128,20 @@ def search_content(
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 for i, line in enumerate(f, 1):
-                    if regex.search(line):
-                        results.append(f"{file_path}:{i}: {line.rstrip()}")
+                    match = regex.search(line)
+                    if match:
+                        line_content = line.rstrip()
+                        if len(line_content) > 1024:
+                            start, end = match.span()
+                            # Try to keep 10 symbols before and after the match
+                            preview_start = max(0, start - 10)
+                            preview_end = min(len(line_content), end + 10)
+                            line_content = (
+                                ("..." if preview_start > 0 else "")
+                                + line_content[preview_start:preview_end]
+                                + ("..." if preview_end < len(line_content) else "")
+                            )
+                        results.append(f"{file_path}:{i}: {line_content}")
                         if len(results) >= 100:
                             return (
                                 "\n".join(results) + "\n... (truncated at 100 matches)"
@@ -272,6 +284,18 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
         path: directory path to generate tree for. Defaults to current directory.
         max_depth: maximum depth to traverse. Defaults to 5.
     """
+    import subprocess
+
+    def is_ignored(path):
+        try:
+            result = subprocess.run(
+                ["git", "check-ignore", path],
+                capture_output=True,
+                text=True
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
 
     def _build_tree(root, current_depth=0, prefix=""):
         if current_depth > max_depth:
@@ -285,6 +309,9 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
         output = ""
         for i, entry in enumerate(entries):
             full_path = os.path.join(root, entry)
+            if is_ignored(full_path):
+                continue
+
             is_last = i == len(entries) - 1
             is_dir = os.path.isdir(full_path)
 

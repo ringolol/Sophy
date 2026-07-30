@@ -82,6 +82,22 @@
       "tools": true
     },
     {
+      "label": "Gemma 4 26B (Ollama)",
+      "model_id": "gemma4:26b",
+      "context": 128000,
+      "api_base": "http://192.168.0.107:11434/v1",
+      "api_key": "ollama",
+      "tools": true
+    },
+    {
+      "label": "GLM 4.7 Flash (Ollama)",
+      "model_id": "glm-4.7-flash:latest",
+      "context": 128000,
+      "api_base": "http://192.168.0.107:11434/v1",
+      "api_key": "ollama",
+      "tools": true
+    },
+    {
       "label": "Qwen 3.5 35B (Ollama)",
       "model_id": "qwen3.5:35b-a3b",
       "context": 128000,
