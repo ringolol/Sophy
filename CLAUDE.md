@@ -19,5 +19,5 @@ Sophy is a coding agent harness. It implements a tool-call loop in which agents 
 ## Development
 Always test your code:
 ```bash
-python -m pytest
+.venv\Scripts\python -m pytest
 ```

@@ -2,6 +2,33 @@
 
 Sophy is an AI-powered coding agent built on top of the `smolagents` library. It implements a robust tool-call loop where a primary **Solver** agent performs tasks by delegating discovery and navigation to a specialized **Explorer** sub-agent.
 
+## Telegram Integration Setup
+
+You can connect Sophy to Telegram to interact with your coding agent via Telegram messages.
+
+### 1. Prerequisites & Environment Variables
+Set the following environment variables before running Sophy:
+- **`SOPHY_TELEGRAM_TOKEN`**: Your Telegram Bot API token (obtained from `@BotFather`).
+- **`SOPHY_TELEGRAM_CHAT_ID`**: Your Telegram chat ID (as an integer) where the bot will communicate.
+
+### 2. How to Get Your Telegram Chat ID
+- **Method 1: Using Telegram Bots (Easiest for Personal DMs)**
+  1. Open Telegram and search for a dedicated ID bot (such as **`@userinfobot`** or **`@RawDataBot`**).
+  2. Start a chat with the bot (`/start`).
+  3. The bot will reply with your user profile details, including your numeric **ID**.
+- **Method 2: Via Telegram Bot API (For Groups, Channels, or DMs)**
+  1. Send a message to your bot (or add your bot to the group/channel and send a message).
+  2. Open your web browser and navigate to:
+     `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
+  3. Look through the JSON response for the `"chat"` object and find the `"id"` field (e.g., `123456789` for personal chats, or negative numbers like `-1001234567890` for groups/channels).
+
+### 3. Running with Telegram
+Pass the `--telegram` flag when starting the Sophy app:
+```bash
+sophy --telegram
+```
+*(Alternatively, while the app is running in the CLI, you can connect the Telegram bot using the `/telegram` command).*
+
 ## Architecture
 
 ### Tech Stack:

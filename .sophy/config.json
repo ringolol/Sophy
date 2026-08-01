@@ -112,6 +112,22 @@
       "api_base": "http://192.168.0.107:11434/v1",
       "api_key": "ollama",
       "tools": true
+    },
+        {
+      "label": "GPT OSS 120B",
+      "model_id": "openai/gpt-oss-120b",
+      "context": 7000,
+      "api_base": "https://api.groq.com/openai/v1",
+      "api_key": "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",
+      "tools": true
+    },
+    {
+      "label": "QWEN 3.6 27B",
+      "model_id": "qwen/qwen3.6-27b",
+      "context": 7000,
+      "api_base": "https://api.groq.com/openai/v1",
+      "api_key": "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",
+      "tools": true
     }
   ]
 }

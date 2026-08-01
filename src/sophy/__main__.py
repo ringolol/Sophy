@@ -181,6 +181,9 @@ async def async_agent_loop():
                     cli_fut = None  # consumed, will recreate next iteration
                 task = winner.result()
         except KeyboardInterrupt:
+            if cli_fut and not cli_fut.done():
+                cli_fut.cancel()
+                cli_fut = None
             if app_state.is_solver_busy.is_set():
                 interrupt_agent(app_state)
             else:

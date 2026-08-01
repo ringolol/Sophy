@@ -101,10 +101,10 @@ class FrontendRouter:
 
     # --- Sync bridges for calling from agent thread ---
 
-    def prompt_confirm_sync(self, message: str, timeout: float = 900) -> bool:
+    def prompt_confirm_sync(self, message: str, timeout: float = 300) -> bool:
         """Sync bridge for prompt_confirm(). Call from agent thread.
 
-        Raises ToolDeniedException on timeout (15 min default).
+        Raises ToolDeniedException on timeout (5 min default).
         """
         from sophy.tools.guards import ToolDeniedException
 
@@ -117,7 +117,7 @@ class FrontendRouter:
         except TimeoutError:
             raise ToolDeniedException("Confirmation timed out")
 
-    def get_input_sync(self, prompt_text: str = "", timeout: float = 900) -> str:
+    def get_input_sync(self, prompt_text: str = "", timeout: float = 300) -> str:
         """Sync bridge for get_input(). Call from agent thread."""
         from sophy.tools.guards import ToolDeniedException
 
@@ -130,7 +130,7 @@ class FrontendRouter:
         except TimeoutError:
             raise ToolDeniedException("Input timed out")
 
-    def prompt_select_sync(self, title: str, choices: list[dict], timeout: float = 900) -> dict | None:
+    def prompt_select_sync(self, title: str, choices: list[dict], timeout: float = 300) -> dict | None:
         """Sync bridge for prompt_select(). Call from agent thread."""
         assert self._loop is not None, "FrontendRouter: event loop not set"
         future = asyncio.run_coroutine_threadsafe(
