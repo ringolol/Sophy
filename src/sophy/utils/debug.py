@@ -15,8 +15,8 @@ def _ensure_logger():
 
     _logger.setLevel(logging.DEBUG)
 
-    # File handler — always active, writes to logs/sophy.log
-    log_dir = os.path.join(os.getcwd(), "logs")
+    # File handler — always active, writes to ~/.sophy/logs/sophy.log
+    log_dir = os.path.expanduser("~/.sophy/logs")
     os.makedirs(log_dir, exist_ok=True)
     file_handler = logging.FileHandler(os.path.join(log_dir, "sophy.log"), encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
