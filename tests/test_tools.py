@@ -151,6 +151,20 @@ def test_get_tree(tmp_path):
     assert "sub/" in res
     assert "subfile.txt" in res
 
+    # Test get_tree truncation when entries > max_entries
+    large_dir = tmp_path / "large"
+    large_dir.mkdir()
+    # Create 35 files and 5 subdirs (total 40 entries)
+    for i in range(35):
+        (large_dir / f"file_{i:02d}.txt").write_text("data")
+    for i in range(5):
+        (large_dir / f"subdir_{i}").mkdir()
+
+    res_large = get_tree(str(tmp_path), max_entries=10)
+    assert "... and" in res_large
+    assert "more files" in res_large
+    assert "more directories" in res_large
+
 
 def test_delete_file(tmp_path):
     p = tmp_path / "todelete.txt"

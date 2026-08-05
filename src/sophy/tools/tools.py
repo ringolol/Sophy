@@ -277,12 +277,13 @@ def list_directory(path: str = ".") -> str:
 @tool
 @path_expand
 @command_preview()
-def get_tree(path: str = ".", max_depth: int = 5) -> str:
-    """Returns a directory tree view with depth limit.
+def get_tree(path: str = ".", max_depth: int = 5, max_entries: int = 30) -> str:
+    """Returns a directory tree view with depth limit and truncation for large directories.
 
     Args:
         path: directory path to generate tree for. Defaults to current directory.
         max_depth: maximum depth to traverse. Defaults to 5.
+        max_entries: maximum number of entries to list in a directory before truncating. Defaults to 30.
     """
     import subprocess
 
@@ -302,17 +303,40 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
             return prefix + ". . . (max depth reached)\n"
 
         try:
-            entries = sorted(os.listdir(root))
+            raw_entries = sorted(os.listdir(root))
         except (PermissionError, OSError) as e:
             return prefix + f"Error: {str(e)}\n"
 
-        output = ""
-        for i, entry in enumerate(entries):
+        # Filter out ignored entries first
+        entries = []
+        for entry in raw_entries:
             full_path = os.path.join(root, entry)
-            if is_ignored(full_path):
-                continue
+            if not is_ignored(full_path):
+                entries.append(entry)
 
-            is_last = i == len(entries) - 1
+        # Truncate if total valid entries > max_entries
+        truncated = False
+        shown_entries = entries
+        remaining_files_count = 0
+        remaining_dirs_count = 0
+
+        if len(entries) > max_entries:
+            truncated = True
+            # Show first 5 entries, or partition into files & dirs
+            # Let's show first 5 entries as requested ("show first 5 and truncate other with ... and N more files and M more directories")
+            shown_entries = entries[:5]
+            hidden_entries = entries[5:]
+            for entry in hidden_entries:
+                full_path = os.path.join(root, entry)
+                if os.path.isdir(full_path):
+                    remaining_dirs_count += 1
+                else:
+                    remaining_files_count += 1
+
+        output = ""
+        for i, entry in enumerate(shown_entries):
+            full_path = os.path.join(root, entry)
+            is_last = (i == len(shown_entries) - 1) and not truncated
             is_dir = os.path.isdir(full_path)
 
             connector = "└── " if is_last else "├── "
@@ -326,6 +350,11 @@ def get_tree(path: str = ".", max_depth: int = 5) -> str:
                     )
             else:
                 output += prefix + connector + entry + "\n"
+
+        if truncated:
+            # Last item line connector for truncation message
+            connector = "└── "
+            output += prefix + connector + f"... and {remaining_files_count} more files and {remaining_dirs_count} more directories\n"
 
         return output
 
