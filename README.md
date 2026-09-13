@@ -1,82 +1,136 @@
-# Sophy - A Coding Agent Harness
+# Sophy
 
-Sophy is an AI-powered coding agent built on top of the `smolagents` library. It implements a robust tool-call loop where a primary **Solver** agent performs tasks by delegating discovery and navigation to a specialized **Explorer** sub-agent.
+AI coding agent harness — an interactive CLI that gives an LLM tools to read, write, edit files, run shell commands, and navigate your codebase. Built on [smolagents](https://github.com/huggingface/smolagents).
 
-## Telegram Integration Setup
+> ⚠️ **This project was fully vibe-coded by free models (e.g. gemini 3.1 flash lite).**
 
-You can connect Sophy to Telegram to interact with your coding agent via Telegram messages.
+## Features
 
-### 1. Prerequisites & Environment Variables
-Set the following environment variables before running Sophy:
-- **`SOPHY_TELEGRAM_TOKEN`**: Your Telegram Bot API token (obtained from `@BotFather`).
-- **`SOPHY_TELEGRAM_CHAT_ID`**: Your Telegram chat ID (as an integer) where the bot will communicate.
+- **Dual-agent architecture** — Solver (executes) delegates discovery to Explorer (read-only navigation)
+- **Human-in-the-loop** — destructive operations (edits, shell commands, deletions) require confirmation; whitelist patterns for auto-approval
+- **Session management** — `/new`, `/fork`, `/resume` with full history persistence in `.sophy/sessions/`
+- **Multi-model** — `/model` switches between configured presets; any OpenAI-compatible API
+- **Context compression** — `/compress` summarizes or truncates long conversation history
+- **Telegram backend** — `/telegram` connects a Telegram bot as an alternate interface
+- **Custom slash commands** — define shortcuts that expand to full prompts
+- **`/pure`** — send a prompt without system prompt injection
 
-### 2. How to Get Your Telegram Chat ID
-- **Method 1: Using Telegram Bots (Easiest for Personal DMs)**
-  1. Open Telegram and search for a dedicated ID bot (such as **`@userinfobot`** or **`@RawDataBot`**).
-  2. Start a chat with the bot (`/start`).
-  3. The bot will reply with your user profile details, including your numeric **ID**.
-- **Method 2: Via Telegram Bot API (For Groups, Channels, or DMs)**
-  1. Send a message to your bot (or add your bot to the group/channel and send a message).
-  2. Open your web browser and navigate to:
-     `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-  3. Look through the JSON response for the `"chat"` object and find the `"id"` field (e.g., `123456789` for personal chats, or negative numbers like `-1001234567890` for groups/channels).
+## Limitations
 
-### 3. Running with Telegram
-Pass the `--telegram` flag when starting the Sophy app:
+- Python 3.11+ only
+- Requires an OpenAI-compatible API endpoint (no local-only models without a proxy)
+- Web search is DuckDuckGo only
+
+## Installation
+
+```bash
+pip install .
+```
+
+Or with pipx:
+
+```bash
+make install
+```
+
+For development:
+
+```bash
+make install-dev
+make install-deps
+```
+
+## Usage
+
+```bash
+sophy
+```
+
+Starts an interactive prompt. Type a task and the Solver agent executes it. Built-in commands:
+
+| Command | Description |
+|---|---|
+| `?` | Show help |
+| `/new` | Create a new session |
+| `/fork` | Fork current session |
+| `/resume` | Switch to another session |
+| `/model` | Switch model preset |
+| `/compress` | Compress conversation context |
+| `/pure` | Send prompt without system injection |
+| `/telegram` | Connect Telegram bot |
+| `/quit` | Exit |
+
+Custom slash commands defined in config also appear here.
+
+Add `--telegram` to connect the Telegram bot on startup:
+
 ```bash
 sophy --telegram
 ```
-*(Alternatively, while the app is running in the CLI, you can connect the Telegram bot using the `/telegram` command).*
 
-## Architecture
+Requires `SOPHY_TELEGRAM_TOKEN` and `SOPHY_TELEGRAM_CHAT_ID` environment variables.
 
-### Tech Stack:
-- Python 3.11+
-- [smolagents](https://github.com/huggingface/smolagents) framework
-- Supports any LLM with an OpenAI-compatible API via `ThinkingModel`
+### Getting your chat ID
 
-### Core Components:
+Message `@userinfobot` on Telegram to get your numeric user ID. For groups, send a message in the group then visit `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates` — the `chat.id` field is your ID.
 
-1. **sophy.py** - Main entry point:
-   - Manages the interactive CLI loop using `prompt_toolkit`.
-   - Coordinates the dual-agent setup (Solver + Explorer).
-   - Handles high-level session commands (`/quit`, `/new`, `/resume`, `/model`, `/compress`).
+## Configuration
 
-2. **factory.py** - Agent & Model Assembly:
-   - The "glue" module that constructs agents with specific roles.
-   - **Solver Agent:** Equipped with the full `TOOLS` suite; manages the Explorer as a tool.
-   - **Explorer Agent:** A restricted agent using only `EXPLORATION_TOOLS` to safely navigate and search the codebase.
+Config lives at `~/.sophy/config.json`. Copy the default:
 
-3. **tools.py** - Agent Capabilities:
-   - **`TOOLS`**: Full suite including `edit_file`, `write_new_file`, `run_command`, `execute_python`, and `web_search`.
-   - **`EXPLORATION_TOOLS`**: Read-only subset (`list_directory`, `search_content`, `read_file`, `get_tree`) for the Explorer.
-   - Includes safety features like the `@confirm` decorator for destructive actions.
+```bash
+make update-config
+```
 
-4. **model.py** - `ThinkingModel` Wrapper:
-   - Custom interface for LLMs that supports "thinking" steps (reasoning).
-   - Handles context window management and role conversions for different API providers.
+### `models`
 
-5. **session.py** & **context_compression.py** - Persistence & Memory:
-   - **session.py**: Tracks conversation history, tool steps, and metadata in `.sophy/sessions/`.
-   - **context_compression.py**: Provides logic to summarize or truncate history to fit within model context limits.
+Array of model presets. Each entry:
 
-6. **prompts.py** & **prompts_data/**:
-   - Defines specialized system prompts for different agent roles.
-   - Enforces the "No Prose" rule and strict JSON tool-call formats.
+```json
+{
+  "label": "My Model",
+  "model_id": "gpt-4o",
+  "context": 128000,
+  "api_base": "https://api.openai.com/v1/",
+  "api_key": "$OPENAI_API_KEY",
+  "tools": true
+}
+```
 
-7. **monkey_patches.py**:
-   - Customizes `smolagents` behavior, including enhanced logging, noise reduction in outputs, and specialized step handling.
+- `api_key` — literal value or `$ENV_VAR` reference
+- `context` — context window size in tokens (default: 128000)
+- `tools` — whether the model supports native tool calling
 
-8. **utils.py**:
-   - Shared utilities for configuration loading, CLI formatting (via `rich`), and user confirmation prompts.
+### `allowed_command_patterns`
 
-## Key Design Principles
+Regex patterns for shell commands that bypass confirmation:
 
-- **Dual-Agent Strategy**: Separates environment discovery (Explorer) from execution (Solver) to increase reliability.
-- **Flexible Tool-Calling**: Supports both native JSON tool-calls and code-tag formats (using `CodeAgent`), depending on the model's capabilities.
-- **No Prose Policy**: Agents communicate exclusively through valid tool-call blobs; no conversational prose.
-- **Human-in-the-Loop**: Critical operations (file edits, shell commands) require explicit user approval.
-- **Session Persistence**: Complete history of tasks and tool executions is saved for later resumption.
-- **Context Awareness**: Automatic context compression helps handle long-running debugging or development sessions.
+```json
+{
+  "allowed_command_patterns": [
+    "^git (status|diff|log)",
+    "^ls "
+  ]
+}
+```
 
+### `custom_commands`
+
+Slash commands that expand to full prompts:
+
+```json
+{
+  "custom_commands": [
+    {
+      "command": "/git",
+      "prompt": "look at the changes, come up with a detailed message and commit them"
+    }
+  ]
+}
+```
+
+## Tools
+
+**Solver** (full suite): `read_file`, `write_new_file`, `edit_file`, `delete_file`, `move_file`, `run_command`, `execute_python`, `search_files`, `search_content`, `list_directory`, `get_tree`, `web_search`, `visit_webpage`, `ask_user`, `get_conversation_history`, `final_answer` — plus the `explorer` sub-agent.
+
+**Explorer** (read-only): `read_file`, `search_files`, `search_content`, `list_directory`, `get_tree`.
