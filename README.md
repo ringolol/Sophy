@@ -4,7 +4,7 @@ AI coding agent harness — an interactive CLI that gives an LLM tools to read, 
 
 _It's more of a playground and a study of how agentic systems work than a production tool._
 
-> ⚠️ **This project was fully vibe-coded by dumb models (e.g. gemini 3.1 flash lite and gemma 4 31b).**
+> ⚠️ **This project was mostly vibe-coded by dumb models (e.g. gemini 3.1 flash lite and gemma 4 31b).**
 
 ## Features
 
