@@ -1,6 +1,8 @@
 # Sophy
 
-AI coding agent harness — an interactive CLI that gives an LLM tools to read, write, edit files, run shell commands, and navigate your codebase. Built on [smolagents](https://github.com/huggingface/smolagents).
+AI coding agent harness — an interactive CLI that gives an LLM tools to read, write, edit files, run shell commands, and navigate your codebase. Built on [smolagents](https://github.com/huggingface/smolagents). 
+
+_It's more of a playground and a study of how agentic systems work than a production tool._
 
 > ⚠️ **This project was fully vibe-coded by free models (e.g. gemini 3.1 flash lite).**
 
