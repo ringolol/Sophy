@@ -6,6 +6,8 @@ _It's more of a playground and a study of how agentic systems work than a produc
 
 > ⚠️ **This project was fully vibe-coded by free models (e.g. gemini 3.1 flash lite).**
 
+![Demo](demo.gif)
+
 ## Features
 
 - **Dual-agent architecture** — Solver (executes) delegates discovery to Explorer (read-only navigation)
